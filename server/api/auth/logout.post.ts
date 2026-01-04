@@ -1,5 +1,5 @@
 import { defineEventHandler } from 'h3'
-import { logoutUser } from '~/server/utils/auth'
+import { logoutUser } from '../../utils/auth'
 
 export default defineEventHandler((event) => {
   logoutUser(event)

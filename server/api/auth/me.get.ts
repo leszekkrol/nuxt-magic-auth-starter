@@ -1,6 +1,6 @@
 import { defineEventHandler } from 'h3'
-import prisma from '~/server/utils/prisma'
-import { getCurrentUser } from '~/server/utils/auth'
+import prisma from '../../utils/prisma'
+import { getCurrentUser } from '../../utils/auth'
 
 export default defineEventHandler(async (event) => {
   const tokenPayload = getCurrentUser(event)

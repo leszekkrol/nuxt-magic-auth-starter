@@ -1,5 +1,5 @@
 import { PrismaPg } from '@prisma/adapter-pg'
-import { PrismaClient } from '../../prisma/generated/client'
+import { PrismaClient } from '@prisma/client'
 
 const prismaClientSingleton = () => {
   const connectionString = process.env.DATABASE_URL || 'postgresql://magic_auth_user:magic_auth_password@localhost:5433/magic_auth'

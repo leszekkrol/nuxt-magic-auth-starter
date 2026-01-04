@@ -1,6 +1,6 @@
 {
   "name": "nuxt-magic-auth-starter",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Magic Link Authentication Starter for Nuxt.js - Passwordless login system with email-based authentication",
   "type": "module",
   "exports": {
@@ -14,11 +14,14 @@
   },
   "main": "./nuxt.config.ts",
   "files": [
+    "assets",
     "components",
     "composables",
+    "layouts",
     "lib",
     "middleware",
     "nuxt.config.ts",
+    "pages",
     "prisma/schema.prisma",
     "prisma/seed.ts",
     "server",
@@ -66,12 +69,16 @@
     "access": "public"
   },
   "peerDependencies": {
-    "@nuxtjs/tailwindcss": "^6.0.0",
     "nuxt": "^4.0.0"
   },
   "dependencies": {
+    "@nuxtjs/tailwindcss": "^6.14.0",
     "@prisma/adapter-pg": "^7.2.0",
     "@prisma/client": "^7.2.0",
+    "@types/bcryptjs": "^2.4.6",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/nodemailer": "^7.0.4",
+    "@types/pg": "^8.16.0",
     "bcryptjs": "^3.0.3",
     "jsonwebtoken": "^9.0.3",
     "nodemailer": "^7.0.12",
@@ -82,10 +89,6 @@
   "devDependencies": {
     "@nuxt/test-utils": "^3.22.0",
     "@nuxtjs/tailwindcss": "^6.14.0",
-    "@types/bcryptjs": "^2.4.6",
-    "@types/jsonwebtoken": "^9.0.10",
-    "@types/nodemailer": "^7.0.4",
-    "@types/pg": "^8.16.0",
     "@vueuse/core": "^14.1.0",
     "dotenv": "^17.2.3",
     "happy-dom": "^20.0.11",

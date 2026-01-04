@@ -1,8 +1,8 @@
 import { defineEventHandler, readBody } from 'h3'
-import prisma from '~/server/utils/prisma'
-import { hashToken, isTokenExpired } from '~/server/utils/token'
-import { loginUser } from '~/server/utils/auth'
-import { useEmailProvider } from '~/lib/email'
+import prisma from '../../utils/prisma'
+import { hashToken, isTokenExpired } from '../../utils/token'
+import { loginUser } from '../../utils/auth'
+import { useEmailProvider } from '../../../lib/email'
 
 interface VerifyTokenBody {
   token: string

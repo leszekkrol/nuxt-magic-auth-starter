@@ -1,8 +1,8 @@
 import { defineEventHandler, readBody } from 'h3'
-import prisma from '~/server/utils/prisma'
-import { validateAndNormalizeEmail, normalizeName, isValidName, createValidationError } from '~/server/utils/validation'
-import { generateSecureToken, hashToken, getTokenExpiration } from '~/server/utils/token'
-import { useEmailProvider } from '~/lib/email'
+import prisma from '../../utils/prisma'
+import { validateAndNormalizeEmail, normalizeName, isValidName, createValidationError } from '../../utils/validation'
+import { generateSecureToken, hashToken, getTokenExpiration } from '../../utils/token'
+import { useEmailProvider } from '../../../lib/email'
 
 interface SendMagicLinkBody {
   email: string

@@ -28,9 +28,90 @@ Welcome to **Nuxt Magic Auth Starter**, a production-ready starter template for 
 - [TypeScript](https://www.typescriptlang.org) - Typed JavaScript at any scale.
 - [VueUse](https://vueuse.org) - Collection of essential Vue Composition Utilities.
 
-## 📦 Installation
+## 🚀 Quick Start (Recommended)
 
-### Option 1: Clone as Template (Recommended)
+Get up and running in under 2 minutes:
+
+```bash
+# 1. Create a new Nuxt project
+npx nuxi init my-app
+cd my-app
+
+# 2. Install the magic auth starter (includes all dependencies!)
+npm install nuxt-magic-auth-starter
+```
+
+**3. Extend your `nuxt.config.ts`:**
+
+```typescript
+export default defineNuxtConfig({
+  extends: ['nuxt-magic-auth-starter'],
+  modules: ['@nuxtjs/tailwindcss'],
+  
+  runtimeConfig: {
+    jwtSecret: process.env.JWT_SECRET,
+    emailProvider: process.env.EMAIL_PROVIDER || 'console',
+    emailConfig: {
+      fromEmail: process.env.FROM_EMAIL,
+      fromName: process.env.FROM_NAME
+    },
+    public: {
+      appUrl: process.env.APP_URL
+    }
+  }
+})
+```
+
+**4. Set up environment and database:**
+
+```bash
+# Copy environment template
+cp node_modules/nuxt-magic-auth-starter/.env.example .env
+
+# Edit .env with your DATABASE_URL and JWT_SECRET
+
+# Initialize Prisma with the schema from the package
+npx prisma init
+cp node_modules/nuxt-magic-auth-starter/prisma/schema.prisma prisma/
+
+# Run migrations
+npx prisma migrate dev --name init
+
+# Start development server
+npm run dev
+```
+
+🎉 **Done!** You now have full magic link authentication. Focus on your app logic!
+
+### What You Get Out of the Box
+
+| Feature | Description |
+|---------|-------------|
+| `useAuth()` composable | Complete auth state management |
+| `/api/auth/*` endpoints | Ready-to-use authentication API |
+| `<AuthMagicLinkForm>` | Email input form component |
+| `<AuthUserMenu>` | User dropdown with logout |
+| `<AuthProtectedContent>` | Show content only to logged-in users |
+| `auth` middleware | Protect routes easily |
+| `guest` middleware | Redirect logged-in users |
+| Prisma schema | User & VerificationToken models |
+| Email templates | Beautiful magic link emails |
+
+### Updating the Package
+
+When a new version is released, simply run:
+
+```bash
+npm update nuxt-magic-auth-starter
+```
+
+Your customizations stay intact while you get the latest features and security updates!
+
+---
+
+## 📦 Alternative: Clone as Template
+
+For full control over the codebase or to customize everything:
 
 ```bash
 # Clone the repository
@@ -54,32 +135,6 @@ npm run db:seed
 
 # Start development server
 npm run dev
-```
-
-### Option 2: Install as Nuxt Layer
-
-```bash
-npm install nuxt-magic-auth-starter
-```
-
-Then extend your `nuxt.config.ts`:
-
-```typescript
-export default defineNuxtConfig({
-  extends: ['nuxt-magic-auth-starter'],
-  
-  runtimeConfig: {
-    jwtSecret: process.env.JWT_SECRET,
-    emailProvider: process.env.EMAIL_PROVIDER || 'console',
-    emailConfig: {
-      fromEmail: process.env.FROM_EMAIL,
-      fromName: process.env.FROM_NAME
-    },
-    public: {
-      appUrl: process.env.APP_URL
-    }
-  }
-})
 ```
 
 ## ⚙️ Configuration
