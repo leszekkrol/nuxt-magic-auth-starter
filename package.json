@@ -1,0 +1,46 @@
+{
+  "name": "nuxt-magic-auth-starter",
+  "version": "1.0.0",
+  "description": "Magic Link Authentication Starter for Nuxt.js - Passwordless login system with email-based authentication, ready to deploy!",
+  "type": "module",
+  "scripts": {
+    "dev": "nuxt dev",
+    "build": "nuxt build",
+    "generate": "nuxt generate",
+    "preview": "nuxt preview",
+    "postinstall": "prisma generate"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/leszekkrol/nuxt-magic-auth-starter.git"
+  },
+  "keywords": [
+    "nuxt",
+    "nuxt4",
+    "magic-link",
+    "authentication",
+    "passwordless",
+    "jwt",
+    "starter",
+    "template"
+  ],
+  "author": "Leszek W. Król",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/leszekkrol/nuxt-magic-auth-starter/issues"
+  },
+  "homepage": "https://github.com/leszekkrol/nuxt-magic-auth-starter#readme",
+  "dependencies": {
+    "@prisma/client": "^7.2.0",
+    "bcryptjs": "^3.0.3",
+    "jsonwebtoken": "^9.0.3",
+    "nuxt": "^4.2.2",
+    "prisma": "^7.2.0"
+  },
+  "devDependencies": {
+    "@nuxtjs/tailwindcss": "^6.14.0",
+    "@types/bcryptjs": "^2.4.6",
+    "@types/jsonwebtoken": "^9.0.10",
+    "typescript": "^5.9.3"
+  }
+}
