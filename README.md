@@ -89,9 +89,12 @@ npm run dev
 |---------|-------------|
 | `useAuth()` composable | Complete auth state management |
 | `/api/auth/*` endpoints | Ready-to-use authentication API |
-| `<AuthMagicLinkForm>` | Email input form component |
+| `<AuthMagicLinkForm>` | Complete login form with title, description, messages |
+| `<AuthStarterPage>` | Ready-to-use landing page component |
 | `<AuthUserMenu>` | User dropdown with logout |
+| `<AuthLoginButton>` | Styled login button with variants |
 | `<AuthProtectedContent>` | Show content only to logged-in users |
+| `<AuthLoadingSpinner>` | Loading indicator component |
 | `auth` middleware | Protect routes easily |
 | `guest` middleware | Redirect logged-in users |
 | Prisma schema | User & VerificationToken models |
@@ -224,15 +227,19 @@ const response = await $fetch('/api/auth/verify-token', {
 
 ### `<AuthMagicLinkForm />`
 
-Email input form for requesting magic link.
+Complete magic link login form with customizable title, description, and messages.
 
 ```vue
 <template>
   <AuthMagicLinkForm 
-    :show-name="true"
+    title="Sign in to your account"
+    description="Enter your email and we'll send you a magic link"
     button-text="Send Magic Link"
+    success-text="Check your email!"
+    error-text="Something went wrong"
+    show-name
     @success="onSuccess"
-    @error="onError"
+    @failed="onFailed"
   />
 </template>
 
@@ -241,10 +248,38 @@ function onSuccess(email) {
   console.log('Magic link sent to:', email)
 }
 
-function onError(message) {
+function onFailed(message) {
   console.error('Error:', message)
 }
 </script>
+```
+
+**Props:**
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `title` | `string` | `''` | Form title (h1) |
+| `description` | `string` | `''` | Description text below title |
+| `showName` | `boolean` | `false` | Show optional name input field |
+| `buttonText` | `string` | `'Send Magic Link'` | Submit button text |
+| `successText` | `string` | `'Check your email for the magic link!'` | Success message |
+| `errorText` | `string` | `'Failed to send magic link'` | Fallback error message |
+
+**Events:**
+
+| Event | Payload | Description |
+|-------|---------|-------------|
+| `@success` | `email: string` | Emitted when magic link is sent successfully |
+| `@failed` | `message: string` | Emitted when sending fails |
+
+### `<AuthStarterPage />`
+
+Ready-to-use landing page component with features showcase.
+
+```vue
+<template>
+  <AuthStarterPage />
+</template>
 ```
 
 ### `<AuthUserMenu />`

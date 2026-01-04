@@ -1,5 +1,13 @@
 <template>
-  <form @submit.prevent="handleSubmit" class="space-y-6">
+  <div>
+    <h1 v-if="title" class="text-2xl font-bold text-gray-900 text-center mb-2">
+      {{ title }}
+    </h1>
+    <p v-if="description" class="text-gray-500 text-center mb-8">
+      {{ description }}
+    </p>
+    
+    <form @submit.prevent="handleSubmit" class="space-y-6">
     <div>
       <label for="email" class="block text-sm font-medium text-gray-700">
         Email address
@@ -46,25 +54,34 @@
       <AuthLoadingSpinner v-if="loading" size="sm" color="white" class="mr-2" />
       {{ loading ? 'Sending...' : buttonText }}
     </button>
-  </form>
+    </form>
+  </div>
 </template>
 
 <script setup lang="ts">
 interface Props {
+  title?: string
+  description?: string
   showName?: boolean
   buttonText?: string
+  successText?: string
+  errorText?: string
   redirectTo?: string
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  showName: true,
+  title: '',
+  description: '',
+  showName: false,
   buttonText: 'Send Magic Link',
+  successText: 'Check your email for the magic link!',
+  errorText: 'Failed to send magic link',
   redirectTo: ''
 })
 
 const emit = defineEmits<{
   success: [email: string]
-  error: [message: string]
+  failed: [message: string]
 }>()
 
 const { sendMagicLink, loading } = useAuth()
@@ -80,11 +97,11 @@ async function handleSubmit() {
 
   try {
     await sendMagicLink(email.value, { name: name.value || undefined })
-    successMessage.value = 'Check your email for the magic link!'
+    successMessage.value = props.successText
     emit('success', email.value)
   } catch (err: any) {
-    errorMessage.value = err.message || 'Failed to send magic link'
-    emit('error', errorMessage.value)
+    errorMessage.value = err.message || props.errorText
+    emit('failed', errorMessage.value)
   }
 }
 </script>
