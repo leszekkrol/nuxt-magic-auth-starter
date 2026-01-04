@@ -1,6 +1,15 @@
 <template>
-  <div>
+  <NuxtLayout>
     <NuxtPage />
-  </div>
+  </NuxtLayout>
 </template>
+
+<script setup lang="ts">
+// Initialize auth state on app mount
+const { refreshUser } = useAuth()
+
+onMounted(() => {
+  refreshUser()
+})
+</script>
 
