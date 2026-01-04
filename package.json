@@ -1,24 +1,27 @@
 {
   "name": "nuxt-magic-auth-starter",
-  "version": "1.0.0",
-  "description": "Magic Link Authentication Starter for Nuxt.js - Passwordless login system with email-based authentication, ready to deploy!",
+  "version": "1.0.1",
+  "description": "Magic Link Authentication Starter for Nuxt.js - Passwordless login system with email-based authentication",
   "type": "module",
+  "exports": {
+    ".": {
+      "import": "./nuxt.config.ts"
+    },
+    "./composables": {
+      "import": "./composables/useAuth.ts"
+    },
+    "./prisma/schema": "./prisma/schema.prisma"
+  },
   "main": "./nuxt.config.ts",
   "files": [
-    "app.vue",
-    "assets",
     "components",
     "composables",
-    "layouts",
     "lib",
     "middleware",
     "nuxt.config.ts",
-    "pages",
     "prisma/schema.prisma",
     "prisma/seed.ts",
-    "prisma.config.ts",
     "server",
-    "tailwind.config.js",
     "templates",
     ".env.example"
   ],
@@ -27,7 +30,8 @@
     "build": "nuxt build",
     "generate": "nuxt generate",
     "preview": "nuxt preview",
-    "postinstall": "prisma generate",
+    "prepare": "nuxt prepare",
+    "db:generate": "prisma generate",
     "db:seed": "npx tsx prisma/seed.ts",
     "db:migrate": "prisma migrate dev",
     "db:push": "prisma db push",
@@ -43,6 +47,8 @@
   "keywords": [
     "nuxt",
     "nuxt4",
+    "nuxt-layer",
+    "nuxt-module",
     "magic-link",
     "authentication",
     "passwordless",
@@ -59,12 +65,15 @@
   "publishConfig": {
     "access": "public"
   },
+  "peerDependencies": {
+    "nuxt": "^4.0.0",
+    "@nuxtjs/tailwindcss": "^6.0.0"
+  },
   "dependencies": {
     "@prisma/adapter-pg": "^7.2.0",
     "@prisma/client": "^7.2.0",
     "bcryptjs": "^3.0.3",
     "jsonwebtoken": "^9.0.3",
-    "nuxt": "^4.2.2",
     "pg": "^8.16.3",
     "prisma": "^7.2.0"
   },
@@ -77,6 +86,7 @@
     "@vueuse/core": "^14.1.0",
     "dotenv": "^17.2.3",
     "happy-dom": "^20.0.11",
+    "nuxt": "^4.2.2",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3",
     "vitest": "^3.2.4"
