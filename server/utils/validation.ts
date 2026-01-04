@@ -29,7 +29,8 @@ export function isValidName(name: string): boolean {
 export function normalizeName(name: string): string {
   return name
     .trim()
-    .split(' ')
+    .split(/\s+/)
+    .filter(word => word.length > 0)
     .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
     .join(' ')
 }

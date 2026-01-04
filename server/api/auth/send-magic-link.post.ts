@@ -1,0 +1,88 @@
+import { defineEventHandler, readBody } from 'h3'
+import prisma from '~/server/utils/prisma'
+import { validateAndNormalizeEmail, normalizeName, isValidName, createValidationError } from '~/server/utils/validation'
+import { generateSecureToken, hashToken, getTokenExpiration } from '~/server/utils/token'
+import { useEmailProvider } from '~/lib/email'
+
+interface SendMagicLinkBody {
+  email: string
+  name?: string
+}
+
+// Rate limiting: max 3 requests per email per 15 minutes
+const rateLimitMap = new Map<string, { count: number; resetAt: number }>()
+const RATE_LIMIT_MAX = 3
+const RATE_LIMIT_WINDOW = 15 * 60 * 1000
+
+function checkRateLimit(email: string): boolean {
+  const now = Date.now()
+  const entry = rateLimitMap.get(email)
+  
+  if (!entry || now > entry.resetAt) {
+    rateLimitMap.set(email, { count: 1, resetAt: now + RATE_LIMIT_WINDOW })
+    return true
+  }
+  
+  if (entry.count >= RATE_LIMIT_MAX) {
+    return false
+  }
+  
+  entry.count++
+  return true
+}
+
+export default defineEventHandler(async (event) => {
+  const body = await readBody<SendMagicLinkBody>(event)
+  
+  const email = validateAndNormalizeEmail(body.email || '')
+  if (!email) {
+    throw createValidationError([{ field: 'email', message: 'Valid email address is required' }])
+  }
+  
+  if (!checkRateLimit(email)) {
+    throw createError({
+      statusCode: 429,
+      statusMessage: 'Too Many Requests',
+      message: 'Too many login attempts. Please try again later.'
+    })
+  }
+  
+  let user = await prisma.user.findUnique({ where: { email } })
+  
+  // Create new user if doesn't exist
+  if (!user) {
+    const name = body.name && isValidName(body.name) ? normalizeName(body.name) : null
+    
+    user = await prisma.user.create({
+      data: { email, name }
+    })
+  }
+  
+  // Invalidate previous unused tokens
+  await prisma.verificationToken.updateMany({
+    where: { email, used: false },
+    data: { used: true }
+  })
+  
+  // Generate new token
+  const token = generateSecureToken()
+  const hashedToken = hashToken(token)
+  const expires = getTokenExpiration(15)
+  
+  await prisma.verificationToken.create({
+    data: {
+      token: hashedToken,
+      email,
+      expires
+    }
+  })
+  
+  // Send magic link email
+  const emailProvider = useEmailProvider()
+  await emailProvider.sendMagicLink(email, token, user.name || undefined)
+  
+  return {
+    success: true,
+    message: 'Magic link sent to your email'
+  }
+})

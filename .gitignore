@@ -39,3 +39,6 @@ coverage
 dist
 build
 
+
+# Prisma generated client
+prisma/generated/

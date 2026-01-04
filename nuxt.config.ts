@@ -4,13 +4,6 @@ export default defineNuxtConfig({
   modules: ['@nuxtjs/tailwindcss'],
   css: ['~/assets/css/main.css'],
   
-  // Nitro configuration for Prisma 7 adapter
-  nitro: {
-    externals: {
-      inline: ['@prisma/client', '@prisma/adapter-pg']
-    }
-  },
-  
   runtimeConfig: {
     jwtSecret: process.env.JWT_SECRET,
     // Email provider config (user configures according to choice)
