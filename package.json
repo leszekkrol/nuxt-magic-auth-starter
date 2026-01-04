@@ -3,6 +3,25 @@
   "version": "1.0.0",
   "description": "Magic Link Authentication Starter for Nuxt.js - Passwordless login system with email-based authentication, ready to deploy!",
   "type": "module",
+  "main": "./nuxt.config.ts",
+  "files": [
+    "app.vue",
+    "assets",
+    "components",
+    "composables",
+    "layouts",
+    "lib",
+    "middleware",
+    "nuxt.config.ts",
+    "pages",
+    "prisma/schema.prisma",
+    "prisma/seed.ts",
+    "prisma.config.ts",
+    "server",
+    "tailwind.config.js",
+    "templates",
+    ".env.example"
+  ],
   "scripts": {
     "dev": "nuxt dev",
     "build": "nuxt build",
@@ -37,6 +56,9 @@
     "url": "https://github.com/leszekkrol/nuxt-magic-auth-starter/issues"
   },
   "homepage": "https://github.com/leszekkrol/nuxt-magic-auth-starter#readme",
+  "publishConfig": {
+    "access": "public"
+  },
   "dependencies": {
     "@prisma/adapter-pg": "^7.2.0",
     "@prisma/client": "^7.2.0",

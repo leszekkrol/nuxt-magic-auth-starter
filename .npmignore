@@ -1,0 +1,30 @@
+# Development
+.nuxt/
+.output/
+node_modules/
+
+# Tests
+tests/
+vitest.config.ts
+coverage/
+
+# Git
+.git/
+.github/
+
+# Docker
+docker-compose.yml
+
+# Docs
+INSTRUCKCJA.md
+
+# Prisma generated (users generate their own)
+prisma/generated/
+prisma/migrations/
+
+# Env
+.env
+
+# Misc
+*.log
+.DS_Store
