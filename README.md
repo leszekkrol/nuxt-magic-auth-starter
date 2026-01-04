@@ -6,6 +6,8 @@
 
 Welcome to **Nuxt Magic Auth Starter**, a production-ready starter template for Nuxt.js applications with passwordless magic link authentication. This starter provides a complete authentication system using email-based magic links, eliminating the need for traditional passwords.
 
+<img width="1707" height="1068" alt="Zrzut ekranu 2026-01-4 o 19 54 54" src="https://github.com/user-attachments/assets/8088cb4d-7b20-48f3-b998-82f41370c38b" />
+
 ## ✨ Features
 
 - 🔐 **Magic Link Authentication** - Passwordless login via email
