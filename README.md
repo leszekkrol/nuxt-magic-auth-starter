@@ -11,13 +11,14 @@ Welcome to **Nuxt Magic Auth Starter**, a production-ready starter template for 
 ## ✨ Features
 
 - 🔐 **Magic Link Authentication** - Passwordless login via email
-- 🎯 **JWT Token Management** - Secure token-based authentication
+- 🎯 **JWT Token Management** - Secure token-based authentication with automatic refresh
 - 📧 **Email Provider Agnostic** - Support for Console (dev), Resend, and SMTP/Nodemailer
 - 🎨 **Tailwind CSS** - Beautiful, responsive UI out of the box
 - 📦 **TypeScript** - Full type safety and IntelliSense
 - 🚀 **Production Ready** - Includes security best practices, rate limiting, and error handling
 - 🔧 **Zero Config** - Works out-of-the-box with sensible defaults
 - 📱 **Responsive Design** - Mobile-first, accessible components
+- 🧪 **Fully Tested** - 161 unit tests with Vitest
 
 ## 🛠 Technology Stack
 
@@ -87,8 +88,8 @@ npm run dev
 
 | Feature | Description |
 |---------|-------------|
-| `useAuth()` composable | Complete auth state management |
-| `/api/auth/*` endpoints | Ready-to-use authentication API |
+| `useAuth()` composable | Complete auth state management with auto token refresh |
+| `/api/auth/*` endpoints | Ready-to-use authentication API with rate limiting |
 | `<AuthMagicLinkForm>` | Complete login form with title, description, messages |
 | `<AuthStarterPage>` | Ready-to-use landing page component |
 | `<AuthUserMenu>` | User dropdown with logout |
@@ -98,7 +99,7 @@ npm run dev
 | `auth` middleware | Protect routes easily |
 | `guest` middleware | Redirect logged-in users |
 | Prisma schema | User & VerificationToken models |
-| Email templates | Beautiful magic link emails |
+| Email templates | Customizable magic link & welcome emails |
 
 ### Updating the Package
 
@@ -264,6 +265,7 @@ function onFailed(message) {
 | `buttonText` | `string` | `'Send Magic Link'` | Submit button text |
 | `successText` | `string` | `'Check your email for the magic link!'` | Success message |
 | `errorText` | `string` | `'Failed to send magic link'` | Fallback error message |
+| `redirectTo` | `string` | `''` | Route to redirect after success |
 
 **Events:**
 
@@ -308,6 +310,13 @@ Styled login button with variant support.
 </template>
 ```
 
+**Props:**
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `to` | `string` | `'/login'` | Navigation target |
+| `variant` | `string` | `'primary'` | Visual style variant |
+
 **Variants:** `primary`, `secondary`, `outline`
 
 ### `<AuthProtectedContent />`
@@ -336,6 +345,15 @@ Loading indicator with size and color options.
 </template>
 ```
 
+**Props:**
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `size` | `string` | `'md'` | Spinner size |
+| `color` | `string` | `'primary'` | Color theme |
+| `label` | `string` | - | Optional text label |
+| `containerClass` | `string` | `''` | Additional CSS classes |
+
 **Sizes:** `sm`, `md`, `lg` | **Colors:** `primary`, `white`, `gray`
 
 ## 📝 Composables
@@ -353,11 +371,22 @@ const {
   error,          // Ref<string | null> - Error message
 
   // Actions
-  sendMagicLink,  // (email: string, options?: { name?: string }) => Promise
-  verifyToken,    // (token: string) => Promise
-  logout,         // () => Promise
-  refreshUser     // () => Promise
+  sendMagicLink,  // (email: string, options?: { name?: string }) => Promise<SendMagicLinkResult>
+  verifyToken,    // (token: string) => Promise<VerifyTokenResult>
+  logout,         // () => Promise<void>
+  refreshUser     // () => Promise<void>
 } = useAuth()
+```
+
+**User Type:**
+
+```typescript
+interface User {
+  id: string
+  email: string
+  name: string | null
+  createdAt?: string
+}
 ```
 
 **Example Usage:**
@@ -442,7 +471,7 @@ model User {
 
 model VerificationToken {
   id        String   @id @default(cuid())
-  token     String   @unique
+  token     String   @unique  // SHA-256 hash of actual token
   email     String
   expires   DateTime
   used      Boolean  @default(false)
@@ -454,6 +483,7 @@ model VerificationToken {
 ### Database Commands
 
 ```bash
+npm run db:generate  # Generate Prisma client
 npm run db:migrate   # Run migrations
 npm run db:push      # Push schema changes
 npm run db:seed      # Seed demo data
@@ -472,11 +502,7 @@ EMAIL_PROVIDER="console"
 
 ### Resend
 
-Modern email API for production.
-
-```bash
-npm install resend
-```
+Modern email API for production. Package is included in dependencies.
 
 ```env
 EMAIL_PROVIDER="resend"
@@ -485,11 +511,7 @@ RESEND_API_KEY="re_your_api_key"
 
 ### Nodemailer (SMTP)
 
-Universal SMTP support for Gmail, Outlook, or custom servers.
-
-```bash
-npm install nodemailer @types/nodemailer
-```
+Universal SMTP support for Gmail, Outlook, or custom servers. Package is included in dependencies.
 
 ```env
 EMAIL_PROVIDER="nodemailer"
@@ -500,9 +522,17 @@ SMTP_USER="your-email@gmail.com"
 SMTP_PASS="your-app-password"
 ```
 
+### Custom Email Templates
+
+Email templates are located in the `templates/` directory:
+- `magic-link.html` - Magic link authentication email
+- `welcome.html` - Welcome email for new users
+
+Templates support `{{placeholder}}` syntax for variable substitution.
+
 ## 🧪 Testing
 
-The project includes 93+ unit tests covering all utilities, API logic, and composables.
+The project includes 161 unit tests covering all utilities, API logic, and composables.
 
 ```bash
 # Run tests
