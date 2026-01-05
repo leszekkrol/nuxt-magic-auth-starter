@@ -5,6 +5,9 @@ import { NodemailerProvider } from './providers/nodemailer'
 
 export type { EmailProvider, EmailConfig }
 export { ConsoleProvider, ResendProvider, NodemailerProvider }
+export { loadEmailTemplate, EmailTemplates } from './templates'
+export type { EmailVariables, EmailTemplateName } from './templates'
+export type { EmailTemplateLoader } from './providers/base'
 
 export function createEmailProvider(provider: string, config: EmailConfig): EmailProvider {
   switch (provider.toLowerCase()) {
