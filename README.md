@@ -44,7 +44,172 @@ npm install nuxt-magic-auth-starter
 
 **3. Extend your `nuxt.config.ts`:**
 
+Choose the configuration that matches your email provider:
+
+<details>
+<summary>📺 <strong>Console (Development)</strong> - Logs magic links to terminal</summary>
+
 ```typescript
+// nuxt.config.ts - Console Provider (Development)
+export default defineNuxtConfig({
+  extends: ['nuxt-magic-auth-starter'],
+  modules: ['@nuxtjs/tailwindcss'],
+  
+  runtimeConfig: {
+    // Database
+    databaseUrl: process.env.DATABASE_URL,
+    
+    // Authentication
+    jwtSecret: process.env.JWT_SECRET,
+    
+    // Email Provider
+    emailProvider: 'console',
+    emailConfig: {
+      fromEmail: 'noreply@localhost',
+      fromName: 'My App (Dev)'
+    },
+    
+    public: {
+      appUrl: process.env.APP_URL || 'http://localhost:3000'
+    }
+  }
+})
+```
+
+**.env file:**
+```bash
+DATABASE_URL="postgresql://user:password@localhost:5432/mydb"
+JWT_SECRET="your-super-secret-jwt-key-min-32-characters"
+APP_URL="http://localhost:3000"
+```
+
+</details>
+
+<details>
+<summary>📧 <strong>Resend</strong> - Modern email API for production</summary>
+
+```typescript
+// nuxt.config.ts - Resend Provider (Production)
+export default defineNuxtConfig({
+  extends: ['nuxt-magic-auth-starter'],
+  modules: ['@nuxtjs/tailwindcss'],
+  
+  runtimeConfig: {
+    // Database
+    databaseUrl: process.env.DATABASE_URL,
+    
+    // Authentication
+    jwtSecret: process.env.JWT_SECRET,
+    
+    // Email Provider
+    emailProvider: 'resend',
+    emailConfig: {
+      fromEmail: process.env.FROM_EMAIL,
+      fromName: process.env.FROM_NAME,
+      // Resend specific
+      resendApiKey: process.env.RESEND_API_KEY
+    },
+    
+    public: {
+      appUrl: process.env.APP_URL
+    }
+  }
+})
+```
+
+**.env file:**
+```bash
+DATABASE_URL="postgresql://user:password@localhost:5432/mydb"
+JWT_SECRET="your-super-secret-jwt-key-min-32-characters"
+APP_URL="https://myapp.com"
+
+# Resend Configuration
+FROM_EMAIL="noreply@myapp.com"
+FROM_NAME="My App"
+RESEND_API_KEY="re_your_resend_api_key"
+```
+
+</details>
+
+<details>
+<summary>📬 <strong>Nodemailer (SMTP)</strong> - Gmail, Outlook, or custom SMTP</summary>
+
+```typescript
+// nuxt.config.ts - Nodemailer/SMTP Provider (Production)
+export default defineNuxtConfig({
+  extends: ['nuxt-magic-auth-starter'],
+  modules: ['@nuxtjs/tailwindcss'],
+  
+  runtimeConfig: {
+    // Database
+    databaseUrl: process.env.DATABASE_URL,
+    
+    // Authentication
+    jwtSecret: process.env.JWT_SECRET,
+    
+    // Email Provider
+    emailProvider: 'nodemailer',
+    emailConfig: {
+      fromEmail: process.env.FROM_EMAIL,
+      fromName: process.env.FROM_NAME,
+      // SMTP specific
+      smtpHost: process.env.SMTP_HOST,
+      smtpPort: process.env.SMTP_PORT,
+      smtpSecure: process.env.SMTP_SECURE,
+      smtpUser: process.env.SMTP_USER,
+      smtpPass: process.env.SMTP_PASS
+    },
+    
+    public: {
+      appUrl: process.env.APP_URL
+    }
+  }
+})
+```
+
+**.env file (Gmail example):**
+```bash
+DATABASE_URL="postgresql://user:password@localhost:5432/mydb"
+JWT_SECRET="your-super-secret-jwt-key-min-32-characters"
+APP_URL="https://myapp.com"
+
+# SMTP Configuration (Gmail)
+FROM_EMAIL="noreply@myapp.com"
+FROM_NAME="My App"
+SMTP_HOST="smtp.gmail.com"
+SMTP_PORT="587"
+SMTP_SECURE="false"
+SMTP_USER="your-email@gmail.com"
+SMTP_PASS="your-app-password"
+```
+
+**.env file (Outlook example):**
+```bash
+# SMTP Configuration (Outlook)
+SMTP_HOST="smtp-mail.outlook.com"
+SMTP_PORT="587"
+SMTP_SECURE="false"
+SMTP_USER="your-email@outlook.com"
+SMTP_PASS="your-password"
+```
+
+**.env file (Custom SMTP example):**
+```bash
+# SMTP Configuration (Custom Server)
+SMTP_HOST="mail.yourserver.com"
+SMTP_PORT="465"
+SMTP_SECURE="true"
+SMTP_USER="noreply@yourserver.com"
+SMTP_PASS="your-smtp-password"
+```
+
+</details>
+
+<details open>
+<summary>⚡ <strong>Quick Config</strong> - Minimal setup with environment variables</summary>
+
+```typescript
+// nuxt.config.ts - Environment-driven configuration
 export default defineNuxtConfig({
   extends: ['nuxt-magic-auth-starter'],
   modules: ['@nuxtjs/tailwindcss'],
@@ -54,7 +219,15 @@ export default defineNuxtConfig({
     emailProvider: process.env.EMAIL_PROVIDER || 'console',
     emailConfig: {
       fromEmail: process.env.FROM_EMAIL,
-      fromName: process.env.FROM_NAME
+      fromName: process.env.FROM_NAME,
+      // Resend
+      resendApiKey: process.env.RESEND_API_KEY,
+      // SMTP
+      smtpHost: process.env.SMTP_HOST,
+      smtpPort: process.env.SMTP_PORT,
+      smtpSecure: process.env.SMTP_SECURE,
+      smtpUser: process.env.SMTP_USER,
+      smtpPass: process.env.SMTP_PASS
     },
     public: {
       appUrl: process.env.APP_URL
@@ -62,6 +235,8 @@ export default defineNuxtConfig({
   }
 })
 ```
+
+</details>
 
 **4. Set up environment and database:**
 
