@@ -1,11 +1,11 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { loadEmailTemplate, EmailTemplates } from '../lib/email/templates'
 import * as fs from 'fs'
-import * as path from 'path'
 
 // Mock fs module
 vi.mock('fs', () => ({
-  readFileSync: vi.fn()
+  readFileSync: vi.fn(),
+  existsSync: vi.fn()
 }))
 
 describe('Email Templates', () => {
@@ -29,10 +29,12 @@ describe('Email Templates', () => {
 
   describe('loadEmailTemplate', () => {
     const mockReadFileSync = fs.readFileSync as ReturnType<typeof vi.fn>
+    const mockExistsSync = fs.existsSync as ReturnType<typeof vi.fn>
     let consoleErrorSpy: ReturnType<typeof vi.spyOn>
 
     beforeEach(() => {
       mockReadFileSync.mockReset()
+      mockExistsSync.mockReset()
       consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
     })
 
@@ -42,6 +44,8 @@ describe('Email Templates', () => {
 
     it('should load and return template content', () => {
       const templateContent = '<html><body>Hello {{name}}</body></html>'
+      // Return true for first existsSync call (user template found)
+      mockExistsSync.mockReturnValue(true)
       mockReadFileSync.mockReturnValue(templateContent)
 
       const result = loadEmailTemplate('test', { name: 'John' })
@@ -51,6 +55,7 @@ describe('Email Templates', () => {
 
     it('should replace multiple variables', () => {
       const templateContent = '<html><body>{{greeting}} {{name}}, your link: {{link}}</body></html>'
+      mockExistsSync.mockReturnValue(true)
       mockReadFileSync.mockReturnValue(templateContent)
 
       const result = loadEmailTemplate('test', {
@@ -64,6 +69,7 @@ describe('Email Templates', () => {
 
     it('should replace same variable multiple times', () => {
       const templateContent = '{{name}} is great. {{name}} is awesome.'
+      mockExistsSync.mockReturnValue(true)
       mockReadFileSync.mockReturnValue(templateContent)
 
       const result = loadEmailTemplate('test', { name: 'John' })
@@ -73,6 +79,7 @@ describe('Email Templates', () => {
 
     it('should preserve unreplaced variables', () => {
       const templateContent = 'Hello {{name}}, {{unknown}} variable'
+      mockExistsSync.mockReturnValue(true)
       mockReadFileSync.mockReturnValue(templateContent)
 
       const result = loadEmailTemplate('test', { name: 'John' })
@@ -82,6 +89,7 @@ describe('Email Templates', () => {
 
     it('should handle empty variables object', () => {
       const templateContent = 'Hello {{name}}'
+      mockExistsSync.mockReturnValue(true)
       mockReadFileSync.mockReturnValue(templateContent)
 
       const result = loadEmailTemplate('test', {})
@@ -90,9 +98,8 @@ describe('Email Templates', () => {
     })
 
     it('should return fallback HTML when file not found', () => {
-      mockReadFileSync.mockImplementation(() => {
-        throw new Error('ENOENT: no such file')
-      })
+      // No files exist
+      mockExistsSync.mockReturnValue(false)
 
       const result = loadEmailTemplate('nonexistent', { magicLink: 'https://test.com' })
       
@@ -101,9 +108,7 @@ describe('Email Templates', () => {
     })
 
     it('should log error when file not found', () => {
-      mockReadFileSync.mockImplementation(() => {
-        throw new Error('ENOENT: no such file')
-      })
+      mockExistsSync.mockReturnValue(false)
 
       loadEmailTemplate('nonexistent', {})
       
@@ -111,9 +116,7 @@ describe('Email Templates', () => {
     })
 
     it('should use appName in fallback template', () => {
-      mockReadFileSync.mockImplementation(() => {
-        throw new Error('ENOENT')
-      })
+      mockExistsSync.mockReturnValue(false)
 
       const result = loadEmailTemplate('test', { appName: 'MyApp' })
       
@@ -121,9 +124,7 @@ describe('Email Templates', () => {
     })
 
     it('should use default values in fallback when variables missing', () => {
-      mockReadFileSync.mockImplementation(() => {
-        throw new Error('ENOENT')
-      })
+      mockExistsSync.mockReturnValue(false)
 
       const result = loadEmailTemplate('test', {})
       
@@ -132,6 +133,7 @@ describe('Email Templates', () => {
     })
 
     it('should read file with utf-8 encoding', () => {
+      mockExistsSync.mockReturnValue(true)
       mockReadFileSync.mockReturnValue('<html></html>')
 
       loadEmailTemplate('test', {})
@@ -143,6 +145,7 @@ describe('Email Templates', () => {
     })
 
     it('should construct correct file path', () => {
+      mockExistsSync.mockReturnValue(true)
       mockReadFileSync.mockReturnValue('<html></html>')
 
       loadEmailTemplate('magic-link', {})
@@ -151,6 +154,19 @@ describe('Email Templates', () => {
       expect(calledPath).toContain('templates')
       expect(calledPath).toContain('magic-link.html')
     })
+
+    it('should prefer user template over package template', () => {
+      // First call (user template) returns true, package template not checked
+      mockExistsSync.mockImplementation((path: string) => {
+        return path.includes(process.cwd())
+      })
+      mockReadFileSync.mockReturnValue('<user>Custom Template</user>')
+
+      const result = loadEmailTemplate('test', {})
+      
+      expect(result).toBe('<user>Custom Template</user>')
+      // Should check user path first
+      expect(mockExistsSync.mock.calls[0][0]).toContain(process.cwd())
+    })
   })
 })
-

@@ -1,5 +1,11 @@
-import { readFileSync } from 'fs'
-import { join } from 'path'
+import { readFileSync, existsSync } from 'fs'
+import { join, dirname } from 'path'
+import { fileURLToPath } from 'url'
+
+// Get the directory of this file (inside the package)
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = dirname(__filename)
+const packageTemplatesDir = join(__dirname, '..', '..', 'templates')
 
 // ============================================================================
 // Types
@@ -19,7 +25,11 @@ export interface EmailVariables {
 /**
  * Loads an HTML email template and replaces placeholders with variables
  * 
- * Template files should be located in the `templates/` directory.
+ * Template resolution order:
+ * 1. User's project: `{project}/templates/{name}.html` (allows customization)
+ * 2. Package default: `{package}/templates/{name}.html` (built-in templates)
+ * 3. Fallback: Minimal inline HTML template
+ * 
  * Placeholders use Mustache-style syntax: {{variableName}}
  * 
  * @param templateName - Name of template file (without .html extension)
@@ -36,7 +46,19 @@ export interface EmailVariables {
  */
 export function loadEmailTemplate(templateName: string, variables: EmailVariables = {}): string {
   try {
-    const templatePath = join(process.cwd(), 'templates', `${templateName}.html`)
+    // First, try to load from user's project (allows customization)
+    const userTemplatePath = join(process.cwd(), 'templates', `${templateName}.html`)
+    // Fallback to package templates
+    const packageTemplatePath = join(packageTemplatesDir, `${templateName}.html`)
+    
+    let templatePath: string
+    if (existsSync(userTemplatePath)) {
+      templatePath = userTemplatePath
+    } else if (existsSync(packageTemplatePath)) {
+      templatePath = packageTemplatePath
+    } else {
+      throw new Error(`Template not found: ${templateName}`)
+    }
     
     let template = readFileSync(templatePath, 'utf-8')
     
