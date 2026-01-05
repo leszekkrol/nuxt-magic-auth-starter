@@ -65,7 +65,7 @@
  * Reusable form component for passwordless authentication via magic links.
  * Handles email input, validation, and submission to the auth API.
  * 
- * @emits success - When magic link is sent successfully (passes email)
+ * @emits success - When magic link is sent successfully (passes user data: { email, name })
  * @emits failed - When sending fails (passes error message)
  * 
  * @example
@@ -106,8 +106,14 @@ const props = withDefaults(defineProps<Props>(), {
   redirectTo: ''
 })
 
+/** User data passed to success event */
+interface MagicLinkUser {
+  email: string
+  name?: string
+}
+
 const emit = defineEmits<{
-  success: [email: string]
+  success: [user: MagicLinkUser]
   failed: [message: string]
 }>()
 
@@ -131,7 +137,10 @@ async function handleSubmit() {
   try {
     await sendMagicLink(email.value, { name: name.value || undefined })
     successMessage.value = props.successText
-    emit('success', email.value)
+    emit('success', { 
+      email: email.value, 
+      name: name.value || undefined 
+    })
   } catch (err: any) {
     errorMessage.value = err.message || props.errorText
     emit('failed', errorMessage.value)

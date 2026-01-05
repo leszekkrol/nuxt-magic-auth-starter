@@ -18,7 +18,7 @@ Welcome to **Nuxt Magic Auth Starter**, a production-ready starter template for 
 - 🚀 **Production Ready** - Includes security best practices, rate limiting, and error handling
 - 🔧 **Zero Config** - Works out-of-the-box with sensible defaults
 - 📱 **Responsive Design** - Mobile-first, accessible components
-- 🧪 **Fully Tested** - 161 unit tests with Vitest
+- 🧪 **Fully Tested** - 172 unit tests with Vitest
 
 ## 🛠 Technology Stack
 
@@ -245,8 +245,9 @@ Complete magic link login form with customizable title, description, and message
 </template>
 
 <script setup>
-function onSuccess(email) {
-  console.log('Magic link sent to:', email)
+function onSuccess(user) {
+  console.log('Magic link sent to:', user.email)
+  console.log('User name:', user.name)
 }
 
 function onFailed(message) {
@@ -271,7 +272,7 @@ function onFailed(message) {
 
 | Event | Payload | Description |
 |-------|---------|-------------|
-| `@success` | `email: string` | Emitted when magic link is sent successfully |
+| `@success` | `{ email: string, name?: string }` | Emitted when magic link is sent successfully |
 | `@failed` | `message: string` | Emitted when sending fails |
 
 ### `<AuthStarterPage />`
@@ -532,7 +533,7 @@ Templates support `{{placeholder}}` syntax for variable substitution.
 
 ## 🧪 Testing
 
-The project includes 161 unit tests covering all utilities, API logic, and composables.
+The project includes 172 unit tests covering all utilities, API logic, composables, and components.
 
 ```bash
 # Run tests

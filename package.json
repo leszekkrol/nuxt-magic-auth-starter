@@ -1,6 +1,6 @@
 {
   "name": "nuxt-magic-auth-starter",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "Magic Link Authentication Starter for Nuxt.js - Passwordless login system with email-based authentication",
   "type": "module",
   "exports": {
