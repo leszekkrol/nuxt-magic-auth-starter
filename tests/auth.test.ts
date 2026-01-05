@@ -2,11 +2,12 @@ import { describe, it, expect, vi, beforeEach, beforeAll } from 'vitest'
 import jwt from 'jsonwebtoken'
 
 const mockSecret = 'test-jwt-secret-key-for-testing'
+let currentMockSecret: string | undefined = mockSecret
 
 // Mock Nuxt auto-imports globally
 beforeAll(() => {
   ;(globalThis as any).useRuntimeConfig = () => ({
-    jwtSecret: mockSecret
+    jwtSecret: currentMockSecret
   })
   ;(globalThis as any).createError = (opts: any) => {
     const error = new Error(opts.message) as any
@@ -16,22 +17,75 @@ beforeAll(() => {
   }
 })
 
+beforeEach(() => {
+  currentMockSecret = mockSecret
+})
+
 // Import after setting up mocks
 const authModule = await import('../server/utils/auth')
 const { 
   generateJWT, 
   verifyJWT, 
   decodeJWT,
+  getTokenExpiration,
+  isTokenExpiringSoon,
   setAuthCookie,
+  getAuthCookie,
   clearAuthCookie,
   getCurrentUser,
   isAuthenticated,
   requireAuth,
   loginUser,
-  logoutUser
+  logoutUser,
+  refreshTokenIfNeeded
 } = authModule
 
 describe('Auth Utils', () => {
+  // ==========================================================================
+  // JWT Secret Validation
+  // ==========================================================================
+
+  describe('JWT Secret', () => {
+    it('should throw error when JWT_SECRET is not configured', async () => {
+      // Temporarily set secret to undefined
+      ;(globalThis as any).useRuntimeConfig = () => ({
+        jwtSecret: undefined
+      })
+
+      // Re-import to get fresh module
+      const freshModule = await import('../server/utils/auth?v=' + Date.now())
+      
+      expect(() => {
+        freshModule.generateJWT({ userId: 'test', email: 'test@test.com' })
+      }).toThrow('JWT_SECRET is not configured')
+
+      // Restore mock
+      ;(globalThis as any).useRuntimeConfig = () => ({
+        jwtSecret: mockSecret
+      })
+    })
+
+    it('should throw error when JWT_SECRET is empty string', async () => {
+      ;(globalThis as any).useRuntimeConfig = () => ({
+        jwtSecret: ''
+      })
+
+      const freshModule = await import('../server/utils/auth?v=' + Date.now() + 1)
+      
+      expect(() => {
+        freshModule.generateJWT({ userId: 'test', email: 'test@test.com' })
+      }).toThrow('JWT_SECRET is not configured')
+
+      ;(globalThis as any).useRuntimeConfig = () => ({
+        jwtSecret: mockSecret
+      })
+    })
+  })
+
+  // ==========================================================================
+  // JWT Generation
+  // ==========================================================================
+  
   describe('generateJWT', () => {
     it('should generate a valid JWT token', () => {
       const payload = { userId: 'user123', email: 'test@example.com' }
@@ -60,6 +114,10 @@ describe('Auth Utils', () => {
       expect(decoded.iat).toBeDefined()
     })
   })
+
+  // ==========================================================================
+  // JWT Verification
+  // ==========================================================================
 
   describe('verifyJWT', () => {
     it('should verify valid token', () => {
@@ -100,6 +158,10 @@ describe('Auth Utils', () => {
     })
   })
 
+  // ==========================================================================
+  // JWT Decoding (without verification)
+  // ==========================================================================
+
   describe('decodeJWT', () => {
     it('should decode token without verification', () => {
       const payload = { userId: 'user123', email: 'test@example.com' }
@@ -125,7 +187,73 @@ describe('Auth Utils', () => {
       const result = decodeJWT('not-a-valid-jwt')
       expect(result).toBeNull()
     })
+
+    it('should return null for empty string', () => {
+      const result = decodeJWT('')
+      expect(result).toBeNull()
+    })
   })
+
+  // ==========================================================================
+  // Token Expiration Helpers
+  // ==========================================================================
+
+  describe('getTokenExpiration', () => {
+    it('should return expiration date for valid token', () => {
+      const token = generateJWT({ userId: 'user123', email: 'test@example.com' })
+      const expiration = getTokenExpiration(token)
+      
+      expect(expiration).toBeInstanceOf(Date)
+      expect(expiration!.getTime()).toBeGreaterThan(Date.now())
+    })
+
+    it('should return null for invalid token', () => {
+      const expiration = getTokenExpiration('invalid-token')
+      expect(expiration).toBeNull()
+    })
+
+    it('should return null for token without exp claim', () => {
+      const tokenWithoutExp = jwt.sign(
+        { userId: 'user123' },
+        mockSecret,
+        { noTimestamp: true }
+      )
+      // Manually remove exp - jwt.sign always adds it with expiresIn
+      const expiration = getTokenExpiration('eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ1c2VySWQiOiJ1c2VyMTIzIn0.invalid')
+      expect(expiration).toBeNull()
+    })
+  })
+
+  describe('isTokenExpiringSoon', () => {
+    it('should return false for fresh token', () => {
+      const token = generateJWT({ userId: 'user123', email: 'test@example.com' })
+      // Token expires in 7 days, threshold is 60 minutes
+      expect(isTokenExpiringSoon(token, 60)).toBe(false)
+    })
+
+    it('should return true for token expiring soon', () => {
+      const soonExpiring = jwt.sign(
+        { userId: 'user123', email: 'test@example.com' },
+        mockSecret,
+        { expiresIn: '30m' } // Expires in 30 minutes
+      )
+      // Threshold is 60 minutes, so 30m token should be "expiring soon"
+      expect(isTokenExpiringSoon(soonExpiring, 60)).toBe(true)
+    })
+
+    it('should return true for invalid token', () => {
+      expect(isTokenExpiringSoon('invalid-token', 60)).toBe(true)
+    })
+
+    it('should use default threshold of 60 minutes', () => {
+      const token = generateJWT({ userId: 'user123', email: 'test@example.com' })
+      expect(isTokenExpiringSoon(token)).toBe(false)
+    })
+  })
+
+  // ==========================================================================
+  // Cookie Management
+  // ==========================================================================
 
   describe('Cookie functions', () => {
     let mockEvent: any
@@ -146,7 +274,22 @@ describe('Auth Utils', () => {
     it('clearAuthCookie should not throw', () => {
       expect(() => clearAuthCookie(mockEvent)).not.toThrow()
     })
+
+    it('getAuthCookie should return undefined when no cookie', () => {
+      const result = getAuthCookie(mockEvent)
+      expect(result).toBeUndefined()
+    })
+
+    it('getAuthCookie should return cookie value when present', () => {
+      mockEvent.node.req.headers.cookie = 'auth_token=test-token-value'
+      const result = getAuthCookie(mockEvent)
+      expect(result).toBe('test-token-value')
+    })
   })
+
+  // ==========================================================================
+  // Authentication Helpers
+  // ==========================================================================
 
   describe('Auth helper functions', () => {
     let mockEvent: any
@@ -165,13 +308,71 @@ describe('Auth Utils', () => {
       expect(result).toBeNull()
     })
 
+    it('getCurrentUser should return payload when valid token in cookie', () => {
+      const token = generateJWT({ userId: 'user123', email: 'test@example.com' })
+      mockEvent.node.req.headers.cookie = `auth_token=${token}`
+      
+      const result = getCurrentUser(mockEvent)
+      expect(result?.userId).toBe('user123')
+      expect(result?.email).toBe('test@example.com')
+    })
+
+    it('getCurrentUser should return null for invalid token', () => {
+      mockEvent.node.req.headers.cookie = 'auth_token=invalid-token'
+      const result = getCurrentUser(mockEvent)
+      expect(result).toBeNull()
+    })
+
     it('isAuthenticated should return false when no cookie', () => {
       const result = isAuthenticated(mockEvent)
       expect(result).toBe(false)
     })
 
+    it('isAuthenticated should return true when valid token present', () => {
+      const token = generateJWT({ userId: 'user123', email: 'test@example.com' })
+      mockEvent.node.req.headers.cookie = `auth_token=${token}`
+      
+      const result = isAuthenticated(mockEvent)
+      expect(result).toBe(true)
+    })
+
     it('requireAuth should throw when not authenticated', () => {
       expect(() => requireAuth(mockEvent)).toThrow()
+    })
+
+    it('requireAuth should return payload when authenticated', () => {
+      const token = generateJWT({ userId: 'user123', email: 'test@example.com' })
+      mockEvent.node.req.headers.cookie = `auth_token=${token}`
+      
+      const result = requireAuth(mockEvent)
+      expect(result.userId).toBe('user123')
+      expect(result.email).toBe('test@example.com')
+    })
+
+    it('requireAuth should throw 401 error', () => {
+      try {
+        requireAuth(mockEvent)
+      } catch (error: any) {
+        expect(error.statusCode).toBe(401)
+        expect(error.statusMessage).toBe('Unauthorized')
+      }
+    })
+  })
+
+  // ==========================================================================
+  // Session Management
+  // ==========================================================================
+
+  describe('Session management', () => {
+    let mockEvent: any
+
+    beforeEach(() => {
+      mockEvent = {
+        node: {
+          req: { headers: { cookie: '' } },
+          res: { setHeader: vi.fn(), getHeader: vi.fn(() => []) }
+        }
+      }
     })
 
     it('loginUser should return token', () => {
@@ -183,8 +384,49 @@ describe('Auth Utils', () => {
       expect(token.split('.')).toHaveLength(3)
     })
 
+    it('loginUser should generate token with correct payload', () => {
+      const user = { id: 'user123', email: 'test@example.com', name: 'Test' }
+      const token = loginUser(mockEvent, user)
+      
+      const decoded = decodeJWT(token)
+      expect(decoded?.userId).toBe('user123')
+      expect(decoded?.email).toBe('test@example.com')
+    })
+
     it('logoutUser should not throw', () => {
       expect(() => logoutUser(mockEvent)).not.toThrow()
+    })
+
+    it('refreshTokenIfNeeded should return null when token not expiring', () => {
+      const token = generateJWT({ userId: 'user123', email: 'test@example.com' })
+      mockEvent.node.req.headers.cookie = `auth_token=${token}`
+      
+      const user = { id: 'user123', email: 'test@example.com', name: 'Test' }
+      const result = refreshTokenIfNeeded(mockEvent, user, 60)
+      
+      expect(result).toBeNull()
+    })
+
+    it('refreshTokenIfNeeded should return new token when expiring soon', () => {
+      const soonExpiring = jwt.sign(
+        { userId: 'user123', email: 'test@example.com' },
+        mockSecret,
+        { expiresIn: '30m' }
+      )
+      mockEvent.node.req.headers.cookie = `auth_token=${soonExpiring}`
+      
+      const user = { id: 'user123', email: 'test@example.com', name: 'Test' }
+      const result = refreshTokenIfNeeded(mockEvent, user, 60)
+      
+      expect(result).toBeDefined()
+      expect(result).not.toBe(soonExpiring)
+    })
+
+    it('refreshTokenIfNeeded should return null when no token', () => {
+      const user = { id: 'user123', email: 'test@example.com', name: 'Test' }
+      const result = refreshTokenIfNeeded(mockEvent, user, 60)
+      
+      expect(result).toBeNull()
     })
   })
 })
