@@ -93,11 +93,11 @@ export function decodeJWT(token: string): JWTPayload | null {
 }
 
 /**
- * Extracts token expiration timestamp
+ * Extracts JWT token expiration timestamp
  * @param token - JWT string
  * @returns Expiration date or null if invalid
  */
-export function getTokenExpiration(token: string): Date | null {
+export function getJwtExpiration(token: string): Date | null {
   const decoded = decodeJWT(token)
   if (!decoded?.exp) return null
   return new Date(decoded.exp * 1000)
@@ -110,7 +110,7 @@ export function getTokenExpiration(token: string): Date | null {
  * @returns True if token expires within threshold
  */
 export function isTokenExpiringSoon(token: string, thresholdMinutes: number = 60): boolean {
-  const expiration = getTokenExpiration(token)
+  const expiration = getJwtExpiration(token)
   if (!expiration) return true
   
   const thresholdMs = thresholdMinutes * 60 * 1000

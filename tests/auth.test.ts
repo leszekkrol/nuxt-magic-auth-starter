@@ -27,7 +27,7 @@ const {
   generateJWT, 
   verifyJWT, 
   decodeJWT,
-  getTokenExpiration,
+  getJwtExpiration,
   isTokenExpiringSoon,
   setAuthCookie,
   getAuthCookie,
@@ -198,17 +198,17 @@ describe('Auth Utils', () => {
   // Token Expiration Helpers
   // ==========================================================================
 
-  describe('getTokenExpiration', () => {
+  describe('getJwtExpiration', () => {
     it('should return expiration date for valid token', () => {
       const token = generateJWT({ userId: 'user123', email: 'test@example.com' })
-      const expiration = getTokenExpiration(token)
+      const expiration = getJwtExpiration(token)
       
       expect(expiration).toBeInstanceOf(Date)
       expect(expiration!.getTime()).toBeGreaterThan(Date.now())
     })
 
     it('should return null for invalid token', () => {
-      const expiration = getTokenExpiration('invalid-token')
+      const expiration = getJwtExpiration('invalid-token')
       expect(expiration).toBeNull()
     })
 
@@ -219,7 +219,7 @@ describe('Auth Utils', () => {
         { noTimestamp: true }
       )
       // Manually remove exp - jwt.sign always adds it with expiresIn
-      const expiration = getTokenExpiration('eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ1c2VySWQiOiJ1c2VyMTIzIn0.invalid')
+      const expiration = getJwtExpiration('eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ1c2VySWQiOiJ1c2VyMTIzIn0.invalid')
       expect(expiration).toBeNull()
     })
   })
