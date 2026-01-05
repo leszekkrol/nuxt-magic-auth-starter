@@ -1,16 +1,46 @@
 import { readFileSync } from 'fs'
 import { join } from 'path'
 
+// ============================================================================
+// Types
+// ============================================================================
+
+/**
+ * Variables that can be injected into email templates
+ */
 export interface EmailVariables {
   [key: string]: string
 }
 
+// ============================================================================
+// Template Loading
+// ============================================================================
+
+/**
+ * Loads an HTML email template and replaces placeholders with variables
+ * 
+ * Template files should be located in the `templates/` directory.
+ * Placeholders use Mustache-style syntax: {{variableName}}
+ * 
+ * @param templateName - Name of template file (without .html extension)
+ * @param variables - Key-value pairs to replace in template
+ * @returns Processed HTML string
+ * 
+ * @example
+ * ```ts
+ * const html = loadEmailTemplate('magic-link', {
+ *   name: 'John',
+ *   magicLink: 'https://app.com/verify?token=abc'
+ * })
+ * ```
+ */
 export function loadEmailTemplate(templateName: string, variables: EmailVariables = {}): string {
   try {
     const templatePath = join(process.cwd(), 'templates', `${templateName}.html`)
     
     let template = readFileSync(templatePath, 'utf-8')
     
+    // Replace all {{placeholder}} occurrences with values
     Object.entries(variables).forEach(([key, value]) => {
       const regex = new RegExp(`{{${key}}}`, 'g')
       template = template.replace(regex, value)
@@ -20,6 +50,7 @@ export function loadEmailTemplate(templateName: string, variables: EmailVariable
   } catch (error) {
     console.error(`[Email] Failed to load template: ${templateName}`, error)
     
+    // Fallback to minimal HTML when template file is missing
     const magicLink = variables.magicLink || '#'
     return `
       <!DOCTYPE html>
@@ -44,6 +75,13 @@ export function loadEmailTemplate(templateName: string, variables: EmailVariable
   }
 }
 
+// ============================================================================
+// Template Constants
+// ============================================================================
+
+/**
+ * Available email template names
+ */
 export const EmailTemplates = {
   MAGIC_LINK: 'magic-link',
   WELCOME: 'welcome'

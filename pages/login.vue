@@ -7,14 +7,23 @@
 </template>
 
 <script setup lang="ts">
+/**
+ * Login Page
+ * 
+ * Passwordless authentication entry point.
+ * Uses auth layout for centered card styling.
+ * Protected by guest middleware (redirects authenticated users).
+ */
 definePageMeta({
   layout: 'auth',
   middleware: 'guest'
 })
 
+/**
+ * Handles successful magic link submission
+ * Can be extended for analytics or additional logic
+ */
 function onSuccess(email: string) {
-  // Optional: track success analytics
   console.log('Magic link sent to:', email)
 }
 </script>
-

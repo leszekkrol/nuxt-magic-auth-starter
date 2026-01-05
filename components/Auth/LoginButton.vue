@@ -9,8 +9,28 @@
 </template>
 
 <script setup lang="ts">
+/**
+ * LoginButton Component
+ * 
+ * Navigation link styled as a button for login/sign-in actions.
+ * Supports multiple visual variants.
+ * 
+ * @example
+ * ```vue
+ * <!-- Default primary button -->
+ * <AuthLoginButton />
+ * 
+ * <!-- Secondary with custom text -->
+ * <AuthLoginButton variant="secondary">Sign Up</AuthLoginButton>
+ * 
+ * <!-- Custom destination -->
+ * <AuthLoginButton to="/register" variant="outline">Register</AuthLoginButton>
+ * ```
+ */
 interface Props {
+  /** Navigation target (default: /login) */
   to?: string
+  /** Visual style variant */
   variant?: 'primary' | 'secondary' | 'outline'
 }
 
@@ -19,6 +39,9 @@ const props = withDefaults(defineProps<Props>(), {
   variant: 'primary'
 })
 
+/**
+ * Maps variant prop to Tailwind styling classes
+ */
 const buttonClass = computed(() => {
   const variants = {
     primary: 'bg-indigo-600 text-white hover:bg-indigo-500 shadow-sm',
@@ -28,4 +51,3 @@ const buttonClass = computed(() => {
   return variants[props.variant]
 })
 </script>
-

@@ -59,13 +59,40 @@
 </template>
 
 <script setup lang="ts">
+/**
+ * MagicLinkForm Component
+ * 
+ * Reusable form component for passwordless authentication via magic links.
+ * Handles email input, validation, and submission to the auth API.
+ * 
+ * @emits success - When magic link is sent successfully (passes email)
+ * @emits failed - When sending fails (passes error message)
+ * 
+ * @example
+ * ```vue
+ * <AuthMagicLinkForm
+ *   title="Sign In"
+ *   description="Enter your email to receive a magic link"
+ *   @success="handleSuccess"
+ * />
+ * ```
+ */
+
+// Component props with sensible defaults
 interface Props {
+  /** Form title displayed above inputs */
   title?: string
+  /** Description text below title */
   description?: string
+  /** Whether to show optional name input field */
   showName?: boolean
+  /** Submit button text */
   buttonText?: string
+  /** Message shown on successful submission */
   successText?: string
+  /** Default error message when submission fails */
   errorText?: string
+  /** Route to redirect after success (not used internally) */
   redirectTo?: string
 }
 
@@ -84,13 +111,19 @@ const emit = defineEmits<{
   failed: [message: string]
 }>()
 
+// Auth composable for API interaction
 const { sendMagicLink, loading } = useAuth()
 
+// Form state
 const email = ref('')
 const name = ref('')
 const errorMessage = ref('')
 const successMessage = ref('')
 
+/**
+ * Handles form submission
+ * Sends magic link request and manages success/error states
+ */
 async function handleSubmit() {
   errorMessage.value = ''
   successMessage.value = ''
@@ -105,4 +138,3 @@ async function handleSubmit() {
   }
 }
 </script>
-

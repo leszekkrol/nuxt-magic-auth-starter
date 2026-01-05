@@ -1,12 +1,27 @@
+/**
+ * Authentication middleware
+ * 
+ * Protects routes that require authentication.
+ * Redirects unauthenticated users to login page with return URL.
+ * 
+ * @example
+ * ```vue
+ * <script setup>
+ * definePageMeta({
+ *   middleware: 'auth'
+ * })
+ * </script>
+ * ```
+ */
 export default defineNuxtRouteMiddleware(async (to) => {
   const { user, refreshUser } = useAuth()
   
-  // Refresh user data if not loaded
+  // Ensure user state is loaded (handles page refresh scenarios)
   if (user.value === null) {
     await refreshUser()
   }
   
-  // Redirect to login if not authenticated
+  // Redirect unauthenticated users to login with return path
   if (!user.value) {
     return navigateTo({
       path: '/login',
@@ -14,4 +29,3 @@ export default defineNuxtRouteMiddleware(async (to) => {
     })
   }
 })
-

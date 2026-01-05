@@ -32,7 +32,7 @@
       </div>
     </div>
 
-    <!-- Features -->
+    <!-- Features Grid -->
     <div class="mt-24 grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
       <div class="rounded-xl bg-white p-6 shadow-sm ring-1 ring-gray-900/5">
         <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-indigo-100 text-xl">
@@ -95,7 +95,7 @@
       </div>
     </div>
 
-    <!-- Tech Stack -->
+    <!-- Tech Stack Footer -->
     <div class="mt-24 text-center">
       <h2 class="text-2xl font-bold text-gray-900 mb-8">Built With</h2>
       <div class="flex flex-wrap items-center justify-center gap-8 text-gray-500">
@@ -112,6 +112,15 @@
 </template>
 
 <script setup lang="ts">
+/**
+ * StarterPage Component
+ * 
+ * Landing page showcasing the Magic Link Authentication system.
+ * Displays hero section, feature cards, and tech stack.
+ * 
+ * Adapts CTA button based on authentication state:
+ * - Logged out: Shows "Get Started" linking to login
+ * - Logged in: Shows "Go to Dashboard" linking to dashboard
+ */
 const { isLoggedIn } = useAuth()
 </script>
-

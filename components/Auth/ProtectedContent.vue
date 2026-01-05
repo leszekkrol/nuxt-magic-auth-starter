@@ -1,6 +1,9 @@
 <template>
   <div>
+    <!-- Show slot content when authenticated -->
     <slot v-if="isLoggedIn" />
+    
+    <!-- Show fallback when not authenticated -->
     <slot v-else name="fallback">
       <div class="flex flex-col items-center justify-center py-12 text-center">
         <div class="rounded-full bg-gray-100 p-4 mb-4">
@@ -17,6 +20,34 @@
 </template>
 
 <script setup lang="ts">
+/**
+ * ProtectedContent Component
+ * 
+ * Wrapper component that conditionally renders content based on authentication.
+ * Shows protected content to authenticated users, fallback to guests.
+ * 
+ * Uses slots for flexibility:
+ * - Default slot: Content shown to authenticated users
+ * - Fallback slot: Custom content for unauthenticated users (has default UI)
+ * 
+ * @example Basic usage
+ * ```vue
+ * <AuthProtectedContent>
+ *   <p>This content is only visible to logged-in users</p>
+ * </AuthProtectedContent>
+ * ```
+ * 
+ * @example Custom fallback
+ * ```vue
+ * <AuthProtectedContent>
+ *   <template #default>
+ *     <SecretDashboard />
+ *   </template>
+ *   <template #fallback>
+ *     <p>Please login to continue</p>
+ *   </template>
+ * </AuthProtectedContent>
+ * ```
+ */
 const { isLoggedIn } = useAuth()
 </script>
-

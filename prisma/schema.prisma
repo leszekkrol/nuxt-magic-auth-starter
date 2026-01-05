@@ -1,3 +1,7 @@
+// =============================================================================
+// Prisma Schema - Magic Link Authentication
+// =============================================================================
+
 generator client {
   provider = "prisma-client-js"
 }
@@ -6,9 +10,17 @@ datasource db {
   provider = "postgresql"
 }
 
+// =============================================================================
+// User Model
+// =============================================================================
+
+/// Registered application user
+/// Created when user first verifies their email via magic link
 model User {
   id        String   @id @default(cuid())
+  /// User's email address (unique identifier for login)
   email     String   @unique
+  /// User's display name (optional, can be set during registration)
   name      String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -16,17 +28,30 @@ model User {
   @@map("users")
 }
 
+// =============================================================================
+// Verification Token Model
+// =============================================================================
+
+/// Magic link verification token
+/// Stores hashed tokens with expiration and usage tracking
 model VerificationToken {
   id        String   @id @default(cuid())
+  /// SHA-256 hash of the actual token (never store plain tokens)
   token     String   @unique
+  /// Email address this token was sent to
   email     String
+  /// Token expiration timestamp (default: 15 minutes from creation)
   expires   DateTime
+  /// Whether token has been consumed (prevents replay attacks)
   used      Boolean  @default(false)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  /// Index for fast token lookup during verification
   @@index([token])
+  /// Index for finding user's pending tokens
   @@index([email])
+  /// Index for cleanup of expired tokens
   @@index([expires])
   @@map("verification_tokens")
 }

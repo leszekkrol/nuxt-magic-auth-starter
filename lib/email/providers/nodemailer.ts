@@ -1,5 +1,31 @@
 import { BaseEmailProvider, type EmailConfig } from './base'
 
+// ============================================================================
+// Nodemailer Email Provider
+// ============================================================================
+
+/**
+ * Email provider using Nodemailer with SMTP
+ * 
+ * Supports any SMTP server (Gmail, Mailgun, SendGrid, custom).
+ * Requires `nodemailer` package: npm install nodemailer
+ * 
+ * @see https://nodemailer.com/
+ * 
+ * @example
+ * ```ts
+ * const provider = new NodemailerProvider({
+ *   fromEmail: 'noreply@app.com',
+ *   fromName: 'My App',
+ *   appUrl: 'https://app.com',
+ *   smtpHost: 'smtp.gmail.com',
+ *   smtpPort: 587,
+ *   smtpSecure: false,
+ *   smtpUser: 'user@gmail.com',
+ *   smtpPass: 'app-password'
+ * })
+ * ```
+ */
 export class NodemailerProvider extends BaseEmailProvider {
   private transporter: any
   
@@ -13,6 +39,10 @@ export class NodemailerProvider extends BaseEmailProvider {
     this.initTransporter()
   }
   
+  /**
+   * Initializes Nodemailer transport with SMTP settings
+   * Uses dynamic import to avoid bundling if not used
+   */
   private async initTransporter(): Promise<void> {
     try {
       const nodemailer = await import('nodemailer')
@@ -31,6 +61,9 @@ export class NodemailerProvider extends BaseEmailProvider {
     }
   }
   
+  /**
+   * Sends magic link email via SMTP
+   */
   async sendMagicLink(to: string, token: string, name?: string): Promise<void> {
     if (!this.transporter) {
       await this.initTransporter()
@@ -48,6 +81,9 @@ export class NodemailerProvider extends BaseEmailProvider {
     }
   }
   
+  /**
+   * Sends welcome email via SMTP
+   */
   async sendWelcome(to: string, name: string): Promise<void> {
     if (!this.transporter) {
       await this.initTransporter()

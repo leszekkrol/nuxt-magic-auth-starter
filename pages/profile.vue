@@ -1,12 +1,13 @@
 <template>
   <div class="mx-auto max-w-2xl px-4 py-12 sm:px-6 lg:px-8">
+    <!-- Page header -->
     <div class="mb-8">
       <h1 class="text-3xl font-bold text-gray-900">Profile</h1>
       <p class="mt-2 text-gray-500">Manage your account settings</p>
     </div>
 
     <div class="rounded-xl bg-white shadow-sm ring-1 ring-gray-900/5">
-      <!-- Profile Info -->
+      <!-- Profile header with avatar -->
       <div class="p-6 border-b border-gray-100">
         <div class="flex items-center gap-4">
           <div class="flex h-16 w-16 items-center justify-center rounded-full bg-indigo-100 text-2xl font-bold text-indigo-600">
@@ -19,7 +20,7 @@
         </div>
       </div>
 
-      <!-- Account Details -->
+      <!-- Account details section -->
       <div class="p-6 space-y-6">
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
@@ -43,7 +44,7 @@
         </div>
       </div>
 
-      <!-- Actions -->
+      <!-- Actions footer -->
       <div class="p-6 bg-gray-50 rounded-b-xl border-t border-gray-100">
         <button
           @click="handleLogout"
@@ -59,6 +60,18 @@
 </template>
 
 <script setup lang="ts">
+/**
+ * Profile Page
+ * 
+ * User account management page.
+ * Requires authentication (uses auth middleware).
+ * 
+ * Displays:
+ * - User avatar and basic info
+ * - Account details (email, name, member since)
+ * - User ID for debugging
+ * - Logout action
+ */
 definePageMeta({
   middleware: 'auth'
 })
@@ -66,11 +79,17 @@ definePageMeta({
 const router = useRouter()
 const { user, logout, loading } = useAuth()
 
+/**
+ * Generates user initials for avatar display
+ */
 const userInitials = computed(() => {
   const name = user.value?.name || user.value?.email || 'U'
   return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
 })
 
+/**
+ * Formats member registration date in full format
+ */
 const memberSince = computed(() => {
   if (!user.value?.createdAt) return 'N/A'
   return new Date(user.value.createdAt).toLocaleDateString('en-US', {
@@ -81,9 +100,11 @@ const memberSince = computed(() => {
   })
 })
 
+/**
+ * Handles user logout with redirect to home
+ */
 async function handleLogout() {
   await logout()
   router.push('/')
 }
 </script>
-

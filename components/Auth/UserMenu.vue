@@ -1,5 +1,6 @@
 <template>
   <div class="relative" ref="menuRef">
+    <!-- Menu trigger button -->
     <button
       @click="isOpen = !isOpen"
       class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-100"
@@ -13,6 +14,7 @@
       </svg>
     </button>
 
+    <!-- Dropdown menu with animation -->
     <Transition
       enter-active-class="transition duration-100 ease-out"
       enter-from-class="transform scale-95 opacity-0"
@@ -25,11 +27,13 @@
         v-if="isOpen"
         class="absolute right-0 mt-2 w-56 origin-top-right rounded-lg bg-white shadow-lg ring-1 ring-black/5 focus:outline-none"
       >
+        <!-- User info header -->
         <div class="px-4 py-3 border-b border-gray-100">
           <p class="text-sm font-medium text-gray-900">{{ displayName }}</p>
           <p class="text-sm text-gray-500 truncate">{{ user?.email }}</p>
         </div>
         
+        <!-- Navigation links -->
         <div class="py-1">
           <NuxtLink
             to="/dashboard"
@@ -47,6 +51,7 @@
           </NuxtLink>
         </div>
 
+        <!-- Logout action -->
         <div class="border-t border-gray-100 py-1">
           <button
             @click="handleLogout"
@@ -63,25 +68,52 @@
 </template>
 
 <script setup lang="ts">
+/**
+ * UserMenu Component
+ * 
+ * Dropdown menu displaying authenticated user info and navigation.
+ * Shows user avatar (initials), name, and provides access to:
+ * - Dashboard
+ * - Profile
+ * - Logout action
+ * 
+ * Features:
+ * - Click-outside to close
+ * - Smooth open/close animations
+ * - Responsive (hides name on mobile)
+ * - Loading state during logout
+ */
 import { onClickOutside } from '@vueuse/core'
 
 const { user, logout, loading } = useAuth()
 const router = useRouter()
 
+// Menu element ref for click-outside detection
 const menuRef = ref<HTMLElement>()
 const isOpen = ref(false)
 
+// Close menu when clicking outside
 onClickOutside(menuRef, () => {
   isOpen.value = false
 })
 
+/**
+ * Display name with fallback
+ */
 const displayName = computed(() => user.value?.name || 'User')
 
+/**
+ * Generates user initials from name or email
+ * Takes first letter of each word, max 2 characters
+ */
 const userInitials = computed(() => {
   const name = user.value?.name || user.value?.email || 'U'
   return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
 })
 
+/**
+ * Handles logout with navigation to home page
+ */
 async function handleLogout() {
   try {
     await logout()
@@ -92,4 +124,3 @@ async function handleLogout() {
   }
 }
 </script>
-

@@ -1,10 +1,12 @@
 <template>
   <div class="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
+    <!-- Page header -->
     <div class="mb-8">
       <h1 class="text-3xl font-bold text-gray-900">Dashboard</h1>
       <p class="mt-2 text-gray-500">Welcome back, {{ user?.name || 'User' }}!</p>
     </div>
 
+    <!-- Dashboard cards grid -->
     <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
       <!-- Profile Card -->
       <div class="rounded-xl bg-white p-6 shadow-sm ring-1 ring-gray-900/5">
@@ -24,7 +26,7 @@
         </div>
       </div>
 
-      <!-- Quick Stats -->
+      <!-- Account Info Card -->
       <div class="rounded-xl bg-white p-6 shadow-sm ring-1 ring-gray-900/5">
         <h3 class="font-semibold text-gray-900 mb-4">Account Info</h3>
         <dl class="space-y-3 text-sm">
@@ -39,7 +41,7 @@
         </dl>
       </div>
 
-      <!-- Get Started -->
+      <!-- Get Started Card -->
       <div class="rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 p-6 text-white shadow-sm">
         <h3 class="font-semibold mb-2">🚀 Get Started</h3>
         <p class="text-sm text-indigo-100 mb-4">
@@ -58,17 +60,35 @@
 </template>
 
 <script setup lang="ts">
+/**
+ * Dashboard Page
+ * 
+ * Protected user dashboard showing account overview.
+ * Requires authentication (uses auth middleware).
+ * 
+ * Features:
+ * - User profile card with avatar initials
+ * - Account information summary
+ * - Getting started guidance
+ */
 definePageMeta({
   middleware: 'auth'
 })
 
 const { user } = useAuth()
 
+/**
+ * Generates user initials from name or email
+ * Returns first 2 characters in uppercase
+ */
 const userInitials = computed(() => {
   const name = user.value?.name || user.value?.email || 'U'
   return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
 })
 
+/**
+ * Formats user registration date
+ */
 const memberSince = computed(() => {
   if (!user.value?.createdAt) return 'N/A'
   return new Date(user.value.createdAt).toLocaleDateString('en-US', {
@@ -77,4 +97,3 @@ const memberSince = computed(() => {
   })
 })
 </script>
-

@@ -11,10 +11,32 @@
 </template>
 
 <script setup lang="ts">
+/**
+ * LoadingSpinner Component
+ * 
+ * Accessible loading indicator with customizable size, color, and optional label.
+ * Uses CSS animation for smooth rotation.
+ * 
+ * @example
+ * ```vue
+ * <!-- Simple spinner -->
+ * <AuthLoadingSpinner />
+ * 
+ * <!-- With label -->
+ * <AuthLoadingSpinner label="Loading..." />
+ * 
+ * <!-- Custom size and color -->
+ * <AuthLoadingSpinner size="lg" color="white" />
+ * ```
+ */
 interface Props {
+  /** Spinner size: 'sm' (16px), 'md' (24px), 'lg' (32px) */
   size?: 'sm' | 'md' | 'lg'
+  /** Color theme */
   color?: 'primary' | 'white' | 'gray'
+  /** Optional text label next to spinner */
   label?: string
+  /** Additional CSS classes for container */
   containerClass?: string
 }
 
@@ -24,6 +46,9 @@ const props = withDefaults(defineProps<Props>(), {
   containerClass: ''
 })
 
+/**
+ * Maps size prop to Tailwind dimension classes
+ */
 const sizeClass = computed(() => {
   const sizes = {
     sm: 'h-4 w-4',
@@ -33,6 +58,9 @@ const sizeClass = computed(() => {
   return sizes[props.size]
 })
 
+/**
+ * Maps color prop to Tailwind text color classes
+ */
 const colorClass = computed(() => {
   const colors = {
     primary: 'text-indigo-600',
@@ -42,4 +70,3 @@ const colorClass = computed(() => {
   return colors[props.color]
 })
 </script>
-

@@ -1,5 +1,27 @@
 import { BaseEmailProvider, type EmailConfig } from './base'
 
+// ============================================================================
+// Resend Email Provider
+// ============================================================================
+
+/**
+ * Email provider using Resend API
+ * 
+ * Resend is a modern email API designed for developers.
+ * Requires `resend` package: npm install resend
+ * 
+ * @see https://resend.com/docs
+ * 
+ * @example
+ * ```ts
+ * const provider = new ResendProvider({
+ *   fromEmail: 'noreply@app.com',
+ *   fromName: 'My App',
+ *   appUrl: 'https://app.com',
+ *   resendApiKey: 're_xxxx'
+ * })
+ * ```
+ */
 export class ResendProvider extends BaseEmailProvider {
   private resend: any
   
@@ -13,6 +35,10 @@ export class ResendProvider extends BaseEmailProvider {
     this.initResend(config.resendApiKey)
   }
   
+  /**
+   * Initializes Resend client with API key
+   * Uses dynamic import to avoid bundling if not used
+   */
   private async initResend(apiKey: string): Promise<void> {
     try {
       const { Resend } = await import('resend')
@@ -22,6 +48,9 @@ export class ResendProvider extends BaseEmailProvider {
     }
   }
   
+  /**
+   * Sends magic link email via Resend API
+   */
   async sendMagicLink(to: string, token: string, name?: string): Promise<void> {
     if (!this.resend) {
       await this.initResend(this.config.resendApiKey!)
@@ -39,6 +68,9 @@ export class ResendProvider extends BaseEmailProvider {
     }
   }
   
+  /**
+   * Sends welcome email via Resend API
+   */
   async sendWelcome(to: string, name: string): Promise<void> {
     if (!this.resend) {
       await this.initResend(this.config.resendApiKey!)
