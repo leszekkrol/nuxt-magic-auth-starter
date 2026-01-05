@@ -1,6 +1,10 @@
 import { defineEventHandler } from 'h3'
 import { logoutUser } from '../../utils/auth'
 
+/**
+ * POST /api/auth/logout
+ * Clears authentication cookie and ends user session
+ */
 export default defineEventHandler((event) => {
   logoutUser(event)
   
@@ -9,4 +13,3 @@ export default defineEventHandler((event) => {
     message: 'Logged out successfully'
   }
 })
-

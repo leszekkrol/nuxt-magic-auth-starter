@@ -9,20 +9,30 @@ interface SendMagicLinkBody {
   name?: string
 }
 
-// Rate limiting: max 3 requests per email per 15 minutes
-const rateLimitMap = new Map<string, { count: number; resetAt: number }>()
-const RATE_LIMIT_MAX = 3
-const RATE_LIMIT_WINDOW = 15 * 60 * 1000
+// ============================================================================
+// Rate Limiting Configuration
+// ============================================================================
 
+const rateLimitMap = new Map<string, { count: number; resetAt: number }>()
+const RATE_LIMIT_MAX = 3           // Max requests per window
+const RATE_LIMIT_WINDOW = 15 * 60 * 1000  // 15 minutes in ms
+
+/**
+ * Checks and updates rate limit for email
+ * @param email - Email address to check
+ * @returns True if within rate limit, false if exceeded
+ */
 function checkRateLimit(email: string): boolean {
   const now = Date.now()
   const entry = rateLimitMap.get(email)
   
+  // Reset if window expired or first request
   if (!entry || now > entry.resetAt) {
     rateLimitMap.set(email, { count: 1, resetAt: now + RATE_LIMIT_WINDOW })
     return true
   }
   
+  // Check if limit exceeded
   if (entry.count >= RATE_LIMIT_MAX) {
     return false
   }
@@ -31,14 +41,26 @@ function checkRateLimit(email: string): boolean {
   return true
 }
 
+// ============================================================================
+// API Handler
+// ============================================================================
+
+/**
+ * POST /api/auth/send-magic-link
+ * Sends magic link email for passwordless authentication
+ */
 export default defineEventHandler(async (event) => {
   const body = await readBody<SendMagicLinkBody>(event)
   
+  // Validate and normalize email
   const email = validateAndNormalizeEmail(body.email || '')
   if (!email) {
-    throw createValidationError([{ field: 'email', message: 'Valid email address is required' }])
+    throw createValidationError([
+      { field: 'email', message: 'Valid email address is required' }
+    ])
   }
   
+  // Enforce rate limiting
   if (!checkRateLimit(email)) {
     throw createError({
       statusCode: 429,
@@ -47,9 +69,9 @@ export default defineEventHandler(async (event) => {
     })
   }
   
+  // Find or create user
   let user = await prisma.user.findUnique({ where: { email } })
   
-  // Create new user if doesn't exist
   if (!user) {
     const name = body.name && isValidName(body.name) ? normalizeName(body.name) : null
     
@@ -58,16 +80,16 @@ export default defineEventHandler(async (event) => {
     })
   }
   
-  // Invalidate previous unused tokens
+  // Invalidate previous unused tokens (security measure)
   await prisma.verificationToken.updateMany({
     where: { email, used: false },
     data: { used: true }
   })
   
-  // Generate new token
+  // Generate new secure verification token
   const token = generateSecureToken()
   const hashedToken = hashToken(token)
-  const expires = getTokenExpiration(15)
+  const expires = getTokenExpiration(15) // 15 minutes
   
   await prisma.verificationToken.create({
     data: {
@@ -77,7 +99,7 @@ export default defineEventHandler(async (event) => {
     }
   })
   
-  // Send magic link email
+  // Send magic link via configured email provider
   const emailProvider = useEmailProvider()
   await emailProvider.sendMagicLink(email, token, user.name || undefined)
   
