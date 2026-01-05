@@ -567,26 +567,123 @@ definePageMeta({
 
 ## 🗃️ Database Schema
 
-### Prisma Models
+This starter uses **Prisma ORM** with PostgreSQL. The schema is minimal but production-ready.
+
+### Entity Relationship
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                              DATABASE SCHEMA                                │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+    ┌─────────────────────────────┐      ┌─────────────────────────────────┐
+    │           users             │      │       verification_tokens       │
+    ├─────────────────────────────┤      ├─────────────────────────────────┤
+    │ id visiblePK     String     │      │ id         PK     String        │
+    │ email      UK    String     │◄─ ─ ─│ email            String        │
+    │ name             String?    │      │ token      UK    String        │
+    │ createdAt        DateTime   │      │ expires          DateTime       │
+    │ updatedAt        DateTime   │      │ used             Boolean        │
+    └─────────────────────────────┘      │ createdAt        DateTime       │
+                                         │ updatedAt        DateTime       │
+                                         └─────────────────────────────────┘
+    
+    PK = Primary Key    UK = Unique Key    ◄─ ─ ─ = Logical relation (by email)
+```
+
+### Prisma Schema
 
 ```prisma
+// =============================================================================
+// Prisma Schema - Magic Link Authentication
+// =============================================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// =============================================================================
+// User Model
+// =============================================================================
+
+/// Registered application user
+/// Created when user first verifies their email via magic link
 model User {
   id        String   @id @default(cuid())
+  /// User's email address (unique identifier for login)
   email     String   @unique
+  /// User's display name (optional, can be set during registration)
   name      String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@map("users")
 }
 
+// =============================================================================
+// Verification Token Model
+// =============================================================================
+
+/// Magic link verification token
+/// Stores hashed tokens with expiration and usage tracking
 model VerificationToken {
   id        String   @id @default(cuid())
-  token     String   @unique  // SHA-256 hash of actual token
+  /// SHA-256 hash of the actual token (never store plain tokens)
+  token     String   @unique
+  /// Email address this token was sent to
   email     String
+  /// Token expiration timestamp (default: 15 minutes from creation)
   expires   DateTime
+  /// Whether token has been consumed (prevents replay attacks)
   used      Boolean  @default(false)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  /// Index for fast token lookup during verification
+  @@index([token])
+  /// Index for finding user's pending tokens
+  @@index([email])
+  /// Index for cleanup of expired tokens
+  @@index([expires])
+  @@map("verification_tokens")
 }
+```
+
+### Model Details
+
+#### User
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | `String` | Unique identifier (CUID format) |
+| `email` | `String` | User's email address (unique, used for login) |
+| `name` | `String?` | Optional display name |
+| `createdAt` | `DateTime` | Account creation timestamp |
+| `updatedAt` | `DateTime` | Last update timestamp |
+
+#### VerificationToken
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | `String` | Unique identifier (CUID format) |
+| `token` | `String` | SHA-256 hash of the magic link token |
+| `email` | `String` | Email address the token was sent to |
+| `expires` | `DateTime` | Token expiration time (15 min default) |
+| `used` | `Boolean` | Whether token has been consumed |
+| `createdAt` | `DateTime` | Token creation timestamp |
+| `updatedAt` | `DateTime` | Last update timestamp |
+
+### Database Indexes
+
+```
+verification_tokens_token_key     UNIQUE (token)     Fast token lookup
+verification_tokens_email_idx     INDEX  (email)     Find user's tokens
+verification_tokens_expires_idx   INDEX  (expires)   Cleanup expired tokens
+users_email_key                   UNIQUE (email)     Prevent duplicates
 ```
 
 ### Database Commands
@@ -594,10 +691,24 @@ model VerificationToken {
 ```bash
 npm run db:generate  # Generate Prisma client
 npm run db:migrate   # Run migrations
-npm run db:push      # Push schema changes
+npm run db:push      # Push schema changes (dev only)
 npm run db:seed      # Seed demo data
-npm run db:studio    # Open Prisma Studio
+npm run db:studio    # Open Prisma Studio GUI
 ```
+
+### Seed Data
+
+The `prisma/seed.ts` creates a demo user for testing:
+
+```typescript
+// Demo user created by seed
+{
+  email: 'demo@example.com',
+  name: 'Demo User'
+}
+```
+
+Run with: `npm run db:seed`
 
 ## 📧 Email Providers
 
