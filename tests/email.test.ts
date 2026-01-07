@@ -1,13 +1,15 @@
 import { describe, it, expect, vi, beforeEach, afterEach, beforeAll } from 'vitest'
 import { ConsoleProvider } from '../lib/email/providers/console'
 import { ResendProvider } from '../lib/email/providers/resend'
+import { AutoSendProvider } from '../lib/email/providers/autosend'
 import { NodemailerProvider } from '../lib/email/providers/nodemailer'
 import { createEmailProvider } from '../lib/email'
 import type { EmailConfig } from '../lib/email/providers/base'
 
 // Mock fs for templates
 vi.mock('fs', () => ({
-  readFileSync: vi.fn(() => '<html>{{name}} {{magicLink}} {{appName}} {{appUrl}} {{year}}</html>')
+  readFileSync: vi.fn(() => '<html>{{name}} {{magicLink}} {{appName}} {{appUrl}} {{year}}</html>'),
+  existsSync: vi.fn(() => true)
 }))
 
 // Mock useRuntimeConfig for useEmailProvider tests
@@ -18,6 +20,7 @@ beforeAll(() => {
       fromEmail: 'test@example.com',
       fromName: 'Test App',
       resendApiKey: '',
+      autosendApiKey: '',
       smtpHost: '',
       smtpPort: '587',
       smtpSecure: false,
@@ -163,6 +166,29 @@ describe('Email Providers', () => {
   })
 
   // ==========================================================================
+  // AutoSendProvider
+  // ==========================================================================
+
+  describe('AutoSendProvider', () => {
+    it('should throw error when API key is missing', () => {
+      expect(() => new AutoSendProvider(mockConfig)).toThrow('AutoSend API key is required')
+    })
+
+    it('should throw error with specific message', () => {
+      try {
+        new AutoSendProvider(mockConfig)
+      } catch (error: any) {
+        expect(error.message).toContain('AUTOSEND_API_KEY')
+      }
+    })
+
+    it('should accept config with API key', () => {
+      const configWithKey = { ...mockConfig, autosendApiKey: 'test-api-key' }
+      expect(() => new AutoSendProvider(configWithKey)).not.toThrow()
+    })
+  })
+
+  // ==========================================================================
   // NodemailerProvider
   // ==========================================================================
 
@@ -201,6 +227,12 @@ describe('Email Providers', () => {
       const configWithKey = { ...mockConfig, resendApiKey: 'test-key' }
       const provider = createEmailProvider('resend', configWithKey)
       expect(provider).toBeInstanceOf(ResendProvider)
+    })
+
+    it('should create AutoSendProvider when provider is autosend', () => {
+      const configWithKey = { ...mockConfig, autosendApiKey: 'test-key' }
+      const provider = createEmailProvider('autosend', configWithKey)
+      expect(provider).toBeInstanceOf(AutoSendProvider)
     })
 
     it('should create NodemailerProvider when provider is nodemailer', () => {
@@ -279,6 +311,10 @@ describe('Email Providers', () => {
       expect(ResendProvider).toBeDefined()
     })
 
+    it('should export AutoSendProvider', () => {
+      expect(AutoSendProvider).toBeDefined()
+    })
+
     it('should export NodemailerProvider', () => {
       expect(NodemailerProvider).toBeDefined()
     })
@@ -298,6 +334,7 @@ describe('Email Providers', () => {
       const providers = await import('../lib/email/providers')
       expect(providers.ConsoleProvider).toBeDefined()
       expect(providers.ResendProvider).toBeDefined()
+      expect(providers.AutoSendProvider).toBeDefined()
       expect(providers.NodemailerProvider).toBeDefined()
       expect(providers.BaseEmailProvider).toBeDefined()
     })

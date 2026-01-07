@@ -1,6 +1,7 @@
 import type { EmailProvider, EmailConfig } from './providers/base'
 import { ConsoleProvider } from './providers/console'
 import { ResendProvider } from './providers/resend'
+import { AutoSendProvider } from './providers/autosend'
 import { NodemailerProvider } from './providers/nodemailer'
 
 // ============================================================================
@@ -8,7 +9,7 @@ import { NodemailerProvider } from './providers/nodemailer'
 // ============================================================================
 
 export type { EmailProvider, EmailConfig }
-export { ConsoleProvider, ResendProvider, NodemailerProvider }
+export { ConsoleProvider, ResendProvider, AutoSendProvider, NodemailerProvider }
 export { loadEmailTemplate, EmailTemplates } from './templates'
 export type { EmailVariables, EmailTemplateName } from './templates'
 export type { EmailTemplateLoader } from './providers/base'
@@ -20,7 +21,7 @@ export type { EmailTemplateLoader } from './providers/base'
 /**
  * Creates an email provider instance based on provider name
  * 
- * @param provider - Provider name: 'console', 'resend', 'nodemailer', or 'smtp'
+ * @param provider - Provider name: 'console', 'resend', 'autosend', 'nodemailer', or 'smtp'
  * @param config - Email configuration including credentials
  * @returns Configured email provider instance
  * 
@@ -38,6 +39,8 @@ export function createEmailProvider(provider: string, config: EmailConfig): Emai
   switch (provider.toLowerCase()) {
     case 'resend':
       return new ResendProvider(config)
+    case 'autosend':
+      return new AutoSendProvider(config)
     case 'nodemailer':
     case 'smtp':
       return new NodemailerProvider(config)
@@ -74,6 +77,7 @@ export function useEmailProvider(): EmailProvider {
     fromName: config.emailConfig.fromName,
     appUrl: config.public.appUrl,
     resendApiKey: config.emailConfig.resendApiKey,
+    autosendApiKey: config.emailConfig.autosendApiKey,
     smtpHost: config.emailConfig.smtpHost,
     smtpPort: parseInt(config.emailConfig.smtpPort) || 587,
     smtpSecure: config.emailConfig.smtpSecure,

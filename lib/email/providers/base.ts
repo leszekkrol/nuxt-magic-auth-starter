@@ -47,6 +47,9 @@ export interface EmailConfig {
   // Resend provider options
   resendApiKey?: string
   
+  // AutoSend provider options
+  autosendApiKey?: string
+  
   // SMTP/Nodemailer options
   smtpHost?: string
   smtpPort?: number

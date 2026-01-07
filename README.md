@@ -18,7 +18,7 @@ Welcome to **Nuxt Magic Auth Starter**, a production-ready starter template for 
 - 🚀 **Production Ready** - Includes security best practices, rate limiting, and error handling
 - 🔧 **Zero Config** - Works out-of-the-box with sensible defaults
 - 📱 **Responsive Design** - Mobile-first, accessible components
-- 🧪 **Fully Tested** - 172 unit tests with Vitest
+- 🧪 **Fully Tested** - 178 unit tests with Vitest
 
 ## 🛠 Technology Stack
 
@@ -132,6 +132,58 @@ RESEND_API_KEY="re_your_resend_api_key"
 </details>
 
 <details>
+<summary>✉️ <strong>AutoSend</strong> - Modern email API for developers</summary>
+
+```typescript
+// nuxt.config.ts - AutoSend Provider (Production)
+export default defineNuxtConfig({
+  extends: ['nuxt-magic-auth-starter'],
+  modules: ['@nuxtjs/tailwindcss'],
+  
+  runtimeConfig: {
+    // Database
+    databaseUrl: process.env.DATABASE_URL,
+    
+    // Authentication
+    jwtSecret: process.env.JWT_SECRET,
+    
+    // Email Provider
+    emailProvider: 'autosend',
+    emailConfig: {
+      fromEmail: process.env.FROM_EMAIL,
+      fromName: process.env.FROM_NAME,
+      // AutoSend specific
+      autosendApiKey: process.env.AUTOSEND_API_KEY
+    },
+    
+    public: {
+      appUrl: process.env.APP_URL
+    }
+  }
+})
+```
+
+**.env file:**
+```bash
+DATABASE_URL="postgresql://user:password@localhost:5432/mydb"
+JWT_SECRET="your-super-secret-jwt-key-min-32-characters"
+APP_URL="https://myapp.com"
+
+# AutoSend Configuration
+FROM_EMAIL="noreply@myapp.com"
+FROM_NAME="My App"
+AUTOSEND_API_KEY="as_your_autosend_api_key"
+```
+
+**Setup Instructions:**
+1. Sign up at [AutoSend](https://autosend.com)
+2. Add and verify your domain in the [Domain section](https://docs.autosend.com/getting-started)
+3. Generate API key in [Settings > API Keys](https://docs.autosend.com/api-keys)
+4. Use a verified email address as `FROM_EMAIL`
+
+</details>
+
+<details>
 <summary>📬 <strong>Nodemailer (SMTP)</strong> - Gmail, Outlook, or custom SMTP</summary>
 
 ```typescript
@@ -222,6 +274,8 @@ export default defineNuxtConfig({
       fromName: process.env.FROM_NAME,
       // Resend
       resendApiKey: process.env.RESEND_API_KEY,
+      // AutoSend
+      autosendApiKey: process.env.AUTOSEND_API_KEY,
       // SMTP
       smtpHost: process.env.SMTP_HOST,
       smtpPort: process.env.SMTP_PORT,
@@ -341,13 +395,16 @@ APP_URL="http://localhost:3000"
 # ==============================================
 # EMAIL CONFIGURATION
 # ==============================================
-# Provider: console | resend | nodemailer
+# Provider: console | resend | autosend | nodemailer
 EMAIL_PROVIDER="console"
 FROM_EMAIL="noreply@yourapp.com"
 FROM_NAME="Your App Name"
 
 # Resend (if EMAIL_PROVIDER=resend)
 RESEND_API_KEY="re_your_api_key"
+
+# AutoSend (if EMAIL_PROVIDER=autosend)
+AUTOSEND_API_KEY="as_your_api_key"
 
 # SMTP (if EMAIL_PROVIDER=nodemailer)
 SMTP_HOST="smtp.gmail.com"
@@ -897,12 +954,25 @@ EMAIL_PROVIDER="console"
 
 ### Resend
 
-Modern email API for production. Package is included in dependencies.
+Modern email API for production.
 
 ```env
 EMAIL_PROVIDER="resend"
 RESEND_API_KEY="re_your_api_key"
 ```
+
+**Links:** [Website](https://resend.com) | [Documentation](https://resend.com/docs)
+
+### AutoSend
+
+Email platform for developers and marketers. Send transactional and marketing emails.
+
+```env
+EMAIL_PROVIDER="autosend"
+AUTOSEND_API_KEY="as_your_api_key"
+```
+
+**Links:** [Website](https://autosend.com) | [Documentation](https://docs.autosend.com)
 
 ### Nodemailer (SMTP)
 
@@ -927,7 +997,7 @@ Templates support `{{placeholder}}` syntax for variable substitution.
 
 ## 🧪 Testing
 
-The project includes 172 unit tests covering all utilities, API logic, composables, and components.
+The project includes 178 unit tests covering all utilities, API logic, composables, and components.
 
 ```bash
 # Run tests
