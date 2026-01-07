@@ -13,12 +13,13 @@ Welcome to **Nuxt Magic Auth Starter**, a production-ready starter template for 
 - 🔐 **Magic Link Authentication** - Passwordless login via email
 - 🎯 **JWT Token Management** - Secure token-based authentication with automatic refresh
 - 📧 **Email Provider Agnostic** - Support for Console (dev), Resend, and SMTP/Nodemailer
+- 💳 **Stripe Integration** - Built-in payment processing with automatic customer creation
 - 🎨 **Tailwind CSS** - Beautiful, responsive UI out of the box
 - 📦 **TypeScript** - Full type safety and IntelliSense
 - 🚀 **Production Ready** - Includes security best practices, rate limiting, and error handling
 - 🔧 **Zero Config** - Works out-of-the-box with sensible defaults
 - 📱 **Responsive Design** - Mobile-first, accessible components
-- 🧪 **Fully Tested** - 178 unit tests with Vitest
+- 🧪 **Fully Tested** - 210 unit tests with Vitest
 
 ## 🛠 Technology Stack
 
@@ -412,6 +413,11 @@ SMTP_PORT="587"
 SMTP_SECURE="false"
 SMTP_USER="your-email@gmail.com"
 SMTP_PASS="your-app-password"
+
+# Stripe (for payment processing)
+STRIPE_SECRET_KEY="sk_test_your_stripe_secret_key"
+STRIPE_PUBLISHABLE_KEY="pk_test_your_stripe_publishable_key"
+STRIPE_WEBHOOK_SECRET="whsec_your_webhook_secret"
 ```
 
 ## 🔐 Authentication Flow
@@ -524,12 +530,22 @@ Token Created ──► Email Sent ──► User Clicks ──► Token Verifie
 
 ## 🔌 API Endpoints
 
+### Authentication Endpoints
+
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | `POST` | `/api/auth/send-magic-link` | Send magic link to email |
 | `POST` | `/api/auth/verify-token` | Verify token and authenticate |
 | `GET` | `/api/auth/me` | Get current authenticated user |
 | `POST` | `/api/auth/logout` | Clear authentication cookie |
+
+### Stripe Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/api/stripe/checkout` | Create checkout session for products/subscriptions |
+| `POST` | `/api/stripe/billing-portal` | Create billing portal session for subscription management |
+| `POST` | `/api/stripe/webhook` | Handle Stripe webhook events |
 
 ### Example: Send Magic Link
 
@@ -995,9 +1011,353 @@ Email templates are located in the `templates/` directory:
 
 Templates support `{{placeholder}}` syntax for variable substitution.
 
+## 💳 Stripe Integration
+
+This starter includes built-in Stripe integration for payment processing and subscription management. When a user creates an account, a Stripe customer is automatically created and linked to their profile.
+
+### 🔄 Updating from Version 1.1.0 or Earlier
+
+If you're upgrading from an earlier version, follow these steps to enable Stripe integration:
+
+**1. Update the package:**
+
+```bash
+npm update nuxt-magic-auth-starter
+```
+
+**2. Update Prisma schema:**
+
+The `User` model now includes a `stripeCustomerId` field. Copy the updated schema:
+
+```bash
+cp node_modules/nuxt-magic-auth-starter/prisma/schema.prisma prisma/
+```
+
+Or manually add this field to your `prisma/schema.prisma`:
+
+```prisma
+model User {
+  id              String   @id @default(cuid())
+  email           String   @unique
+  name            String?
+  stripeCustomerId String? @unique  // 👈 Add this line
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@map("users")
+}
+```
+
+**3. Create and run database migration:**
+
+```bash
+# Generate Prisma client with new schema
+npx prisma generate
+
+# Create migration
+npx prisma migrate dev --name add-stripe-customer-id
+
+# Or for production (without prompts)
+npx prisma migrate deploy
+```
+
+**4. Install Stripe package (if not auto-installed):**
+
+```bash
+npm install stripe
+```
+
+**5. Add Stripe configuration to `.env`:**
+
+```bash
+# Add these lines to your .env file
+STRIPE_SECRET_KEY="sk_test_your_stripe_secret_key"
+STRIPE_PUBLISHABLE_KEY="pk_test_your_stripe_publishable_key"
+STRIPE_WEBHOOK_SECRET="whsec_your_webhook_secret"
+```
+
+**6. Update your `nuxt.config.ts`:**
+
+Add Stripe configuration to runtimeConfig:
+
+```typescript
+export default defineNuxtConfig({
+  extends: ['nuxt-magic-auth-starter'],
+  
+  runtimeConfig: {
+    // ... existing config
+    
+    // Add Stripe config
+    stripeSecretKey: process.env.STRIPE_SECRET_KEY,
+    stripeWebhookSecret: process.env.STRIPE_WEBHOOK_SECRET,
+    
+    public: {
+      // ... existing public config
+      stripePublishableKey: process.env.STRIPE_PUBLISHABLE_KEY
+    }
+  }
+})
+```
+
+**7. Restart your development server:**
+
+```bash
+npm run dev
+```
+
+✅ **Done!** New users will automatically get a Stripe customer ID upon registration.
+
+**Optional - Backfill existing users:**
+
+If you have existing users without Stripe customer IDs, create a migration script:
+
+```typescript
+// scripts/backfill-stripe-customers.ts
+import { PrismaClient } from '@prisma/client'
+import Stripe from 'stripe'
+
+const prisma = new PrismaClient()
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+  apiVersion: '2024-12-18.acacia',
+})
+
+async function backfillStripeCustomers() {
+  const usersWithoutStripe = await prisma.user.findMany({
+    where: { stripeCustomerId: null }
+  })
+
+  console.log(`Found ${usersWithoutStripe.length} users without Stripe customer ID`)
+
+  for (const user of usersWithoutStripe) {
+    try {
+      const customer = await stripe.customers.create({
+        email: user.email,
+        name: user.name || undefined,
+        metadata: { userId: user.id }
+      })
+
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { stripeCustomerId: customer.id }
+      })
+
+      console.log(`✓ Created Stripe customer for ${user.email}`)
+    } catch (error) {
+      console.error(`✗ Failed for ${user.email}:`, error)
+    }
+  }
+
+  console.log('Backfill complete!')
+}
+
+backfillStripeCustomers()
+  .then(() => process.exit(0))
+  .catch((error) => {
+    console.error(error)
+    process.exit(1)
+  })
+```
+
+Run it with:
+```bash
+npx tsx scripts/backfill-stripe-customers.ts
+```
+
+---
+
+### Setup
+
+1. **Create a Stripe account** at [https://stripe.com](https://stripe.com)
+
+2. **Get your API keys** from [Stripe Dashboard](https://dashboard.stripe.com/apikeys)
+
+3. **Add keys to your `.env` file:**
+
+```bash
+# Get these from: https://dashboard.stripe.com/apikeys
+STRIPE_SECRET_KEY="sk_test_your_stripe_secret_key"
+STRIPE_PUBLISHABLE_KEY="pk_test_your_stripe_publishable_key"
+
+# Optional: For webhook signature verification
+# Get from: https://dashboard.stripe.com/webhooks
+STRIPE_WEBHOOK_SECRET="whsec_your_webhook_secret"
+```
+
+4. **Update your `nuxt.config.ts`** (already configured if you followed the quick start):
+
+```typescript
+export default defineNuxtConfig({
+  runtimeConfig: {
+    stripeSecretKey: process.env.STRIPE_SECRET_KEY,
+    stripeWebhookSecret: process.env.STRIPE_WEBHOOK_SECRET,
+    
+    public: {
+      stripePublishableKey: process.env.STRIPE_PUBLISHABLE_KEY
+    }
+  }
+})
+```
+
+### Features
+
+| Feature | Description |
+|---------|-------------|
+| 🎫 **Auto Customer Creation** | Stripe customer automatically created on user registration |
+| 💰 **Checkout Sessions** | Create payment and subscription checkout flows |
+| 🏪 **Billing Portal** | Let customers manage subscriptions and payment methods |
+| 🔔 **Webhook Support** | Handle Stripe events (subscriptions, payments, etc.) |
+| 🔐 **Secure** | Uses server-side API keys, never exposes secrets to client |
+
+### Usage Examples
+
+#### Create Checkout Session
+
+```typescript
+// In your component or page
+async function startCheckout() {
+  try {
+    const response = await $fetch('/api/stripe/checkout', {
+      method: 'POST',
+      body: {
+        priceId: 'price_1234567890',  // Your Stripe price ID
+        mode: 'subscription',          // or 'payment' for one-time
+        successUrl: window.location.origin + '/success',
+        cancelUrl: window.location.origin + '/cancelled'
+      }
+    })
+    
+    // Redirect to Stripe checkout
+    window.location.href = response.url
+  } catch (error) {
+    console.error('Checkout failed:', error)
+  }
+}
+```
+
+#### Open Billing Portal
+
+```typescript
+// Let users manage their subscriptions
+async function openBillingPortal() {
+  try {
+    const response = await $fetch('/api/stripe/billing-portal', {
+      method: 'POST',
+      body: {
+        returnUrl: window.location.origin + '/profile'
+      }
+    })
+    
+    // Redirect to Stripe billing portal
+    window.location.href = response.url
+  } catch (error) {
+    console.error('Failed to open billing portal:', error)
+  }
+}
+```
+
+#### Example Vue Component
+
+```vue
+<template>
+  <div>
+    <h2>Choose Your Plan</h2>
+    
+    <button @click="subscribe('price_basic')">
+      Basic Plan - $9/month
+    </button>
+    
+    <button @click="subscribe('price_pro')">
+      Pro Plan - $29/month
+    </button>
+    
+    <button v-if="isLoggedIn" @click="manageBilling">
+      Manage Billing
+    </button>
+  </div>
+</template>
+
+<script setup>
+const { isLoggedIn } = useAuth()
+
+async function subscribe(priceId) {
+  const { url } = await $fetch('/api/stripe/checkout', {
+    method: 'POST',
+    body: { priceId }
+  })
+  
+  window.location.href = url
+}
+
+async function manageBilling() {
+  const { url } = await $fetch('/api/stripe/billing-portal', {
+    method: 'POST'
+  })
+  
+  window.location.href = url
+}
+</script>
+```
+
+### Webhooks
+
+To handle Stripe events (subscriptions, payments, etc.), configure webhooks in your [Stripe Dashboard](https://dashboard.stripe.com/webhooks):
+
+1. **Add endpoint URL:** `https://yourdomain.com/api/stripe/webhook`
+
+2. **Select events to listen to:**
+   - `customer.subscription.created`
+   - `customer.subscription.updated`
+   - `customer.subscription.deleted`
+   - `invoice.payment_succeeded`
+   - `invoice.payment_failed`
+   - `checkout.session.completed`
+
+3. **Copy webhook signing secret** and add to `.env`:
+   ```bash
+   STRIPE_WEBHOOK_SECRET="whsec_..."
+   ```
+
+4. **Customize webhook handler** in `server/api/stripe/webhook.post.ts` to update your database based on events.
+
+### Database Schema
+
+The `User` model includes a `stripeCustomerId` field:
+
+```prisma
+model User {
+  id              String   @id @default(cuid())
+  email           String   @unique
+  name            String?
+  stripeCustomerId String? @unique  // Automatically populated on registration
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+```
+
+### Testing
+
+Use Stripe's test mode for development:
+
+- Test card: `4242 4242 4242 4242`
+- Any future expiry date
+- Any 3-digit CVC
+- Any postal code
+
+See [Stripe Testing Documentation](https://stripe.com/docs/testing) for more test cards.
+
+### Production Checklist
+
+- [ ] Replace test API keys with live keys
+- [ ] Configure live webhook endpoint
+- [ ] Test checkout flow end-to-end
+- [ ] Test billing portal functionality
+- [ ] Verify webhook events are processed correctly
+- [ ] Enable Stripe Radar for fraud prevention
+- [ ] Set up email receipts in Stripe Dashboard
+
 ## 🧪 Testing
 
-The project includes 178 unit tests covering all utilities, API logic, composables, and components.
+The project includes 210 unit tests covering all utilities, API logic, composables, components, and Stripe integration.
 
 ```bash
 # Run tests
@@ -1056,6 +1416,26 @@ _**PS:** Consider sponsoring my work ([Leszek W. Król](https://www.leszekkrol.c
 
 The author of the project is:
 - <b><a href="http://linkedin.com/in/leszekkrol/">Leszek W. Król</a></b>
+
+## 📝 Changelog
+
+### Version 1.2.0 (Latest)
+- ✨ **NEW**: Full Stripe integration for payment processing
+- ✨ **NEW**: Automatic Stripe customer creation on user registration
+- ✨ **NEW**: Billing portal endpoint for subscription management
+- ✨ **NEW**: Checkout session endpoint for purchases
+- ✨ **NEW**: Webhook handler for Stripe events
+- ✨ **NEW**: 32 additional unit tests for Stripe functionality
+- 📚 Updated documentation with comprehensive Stripe setup guide
+- 🔄 Added migration guide for existing projects
+- 🎯 Total: 210 unit tests (178 → 210)
+
+### Version 1.1.0
+- Initial stable release
+- Magic link authentication system
+- JWT token management
+- Email provider support (Console, Resend, AutoSend, Nodemailer)
+- Fully tested with 178 unit tests
 
 ## 🧐 Bug Reports and Feature Requests
 

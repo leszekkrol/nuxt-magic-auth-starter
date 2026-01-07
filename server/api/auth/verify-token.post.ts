@@ -4,6 +4,7 @@ import { hashToken, isTokenExpired } from '../../utils/token'
 import { loginUser } from '../../utils/auth'
 import { isNonEmptyString, createValidationError } from '../../utils/validation'
 import { useEmailProvider } from '../../../lib/email'
+import { createStripeCustomer } from '../../utils/stripe'
 
 interface VerifyTokenBody {
   token: string
@@ -12,6 +13,11 @@ interface VerifyTokenBody {
 /**
  * POST /api/auth/verify-token
  * Verifies magic link token and creates user session
+ * 
+ * For new users:
+ * - Creates Stripe customer automatically
+ * - Links Stripe customer ID to user account
+ * - Sends welcome email
  */
 export default defineEventHandler(async (event) => {
   const body = await readBody<VerifyTokenBody>(event)
@@ -70,8 +76,22 @@ export default defineEventHandler(async (event) => {
   const isNewUser = !user
   
   if (!user) {
+    // Create Stripe customer first
+    let stripeCustomerId: string | undefined
+    try {
+      const stripeCustomer = await createStripeCustomer(verificationToken.email, null)
+      stripeCustomerId = stripeCustomer.id
+    } catch (error) {
+      console.error('Failed to create Stripe customer:', error)
+      // Continue without Stripe customer - can be created later
+    }
+    
+    // Create user with Stripe customer ID
     user = await prisma.user.create({
-      data: { email: verificationToken.email }
+      data: { 
+        email: verificationToken.email,
+        stripeCustomerId
+      }
     })
   }
   

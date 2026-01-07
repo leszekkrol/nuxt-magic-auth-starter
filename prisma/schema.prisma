@@ -17,13 +17,15 @@ datasource db {
 /// Registered application user
 /// Created when user first verifies their email via magic link
 model User {
-  id        String   @id @default(cuid())
+  id              String   @id @default(cuid())
   /// User's email address (unique identifier for login)
-  email     String   @unique
+  email           String   @unique
   /// User's display name (optional, can be set during registration)
-  name      String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  name            String?
+  /// Stripe customer ID for payment management
+  stripeCustomerId String? @unique
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
   @@map("users")
 }

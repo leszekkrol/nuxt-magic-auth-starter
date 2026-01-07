@@ -1,6 +1,6 @@
 {
   "name": "nuxt-magic-auth-starter",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Magic Link Authentication Starter for Nuxt.js - Passwordless login system with email-based authentication",
   "type": "module",
   "exports": {
@@ -26,7 +26,8 @@
     "prisma/seed.ts",
     "server",
     "templates",
-    ".env.example"
+    ".env.example",
+    "CHANGELOG.md"
   ],
   "scripts": {
     "dev": "nuxt dev",
@@ -56,6 +57,10 @@
     "authentication",
     "passwordless",
     "jwt",
+    "stripe",
+    "payments",
+    "subscriptions",
+    "billing",
     "starter",
     "template"
   ],
@@ -83,7 +88,8 @@
     "nodemailer": "^7.0.12",
     "pg": "^8.16.3",
     "prisma": "^7.2.0",
-    "resend": "^6.6.0"
+    "resend": "^6.6.0",
+    "stripe": "^20.1.1"
   },
   "devDependencies": {
     "@nuxt/test-utils": "^3.22.0",

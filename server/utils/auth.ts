@@ -1,6 +1,7 @@
 import jwt from 'jsonwebtoken'
 import type { H3Event } from 'h3'
 import { getCookie, setCookie, deleteCookie } from 'h3'
+import prisma from './prisma'
 
 // ============================================================================
 // Types & Interfaces
@@ -191,6 +192,30 @@ export function requireAuth(event: H3Event): JWTPayload {
       statusCode: 401,
       statusMessage: 'Unauthorized',
       message: 'Authentication required'
+    })
+  }
+  
+  return user
+}
+
+/**
+ * Requires authentication and fetches full user from database
+ * @param event - H3 event context
+ * @returns Full user object from database
+ * @throws 401 error if not authenticated or user not found
+ */
+export async function requireUser(event: H3Event) {
+  const payload = requireAuth(event)
+  
+  const user = await prisma.user.findUnique({
+    where: { id: payload.userId }
+  })
+  
+  if (!user) {
+    throw createError({
+      statusCode: 401,
+      statusMessage: 'Unauthorized',
+      message: 'User not found'
     })
   }
   
