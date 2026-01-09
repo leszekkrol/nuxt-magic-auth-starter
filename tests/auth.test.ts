@@ -21,6 +21,17 @@ beforeEach(() => {
   currentMockSecret = mockSecret
 })
 
+// Mock Prisma
+const mockPrisma = {
+  user: {
+    findUnique: vi.fn(),
+  },
+}
+
+vi.mock('../server/utils/prisma', () => ({
+  default: mockPrisma,
+}))
+
 // Import after setting up mocks
 const authModule = await import('../server/utils/auth')
 const { 
@@ -35,6 +46,7 @@ const {
   getCurrentUser,
   isAuthenticated,
   requireAuth,
+  requireUser,
   loginUser,
   logoutUser,
   refreshTokenIfNeeded
@@ -356,6 +368,89 @@ describe('Auth Utils', () => {
         expect(error.statusCode).toBe(401)
         expect(error.statusMessage).toBe('Unauthorized')
       }
+    })
+  })
+
+  // ==========================================================================
+  // Require User (Database Fetch)
+  // ==========================================================================
+
+  describe('requireUser', () => {
+    let mockEvent: any
+
+    beforeEach(() => {
+      mockEvent = {
+        node: {
+          req: { headers: { cookie: '' } },
+          res: { setHeader: vi.fn(), getHeader: vi.fn(() => []) }
+        }
+      }
+      vi.clearAllMocks()
+    })
+
+    it('should return full user from database when authenticated', async () => {
+      const token = generateJWT({ userId: 'user123', email: 'test@example.com' })
+      mockEvent.node.req.headers.cookie = `auth_token=${token}`
+
+      const mockUser = {
+        id: 'user123',
+        email: 'test@example.com',
+        name: 'Test User',
+        stripeCustomerId: 'cus_test123',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      }
+
+      mockPrisma.user.findUnique.mockResolvedValue(mockUser)
+
+      const result = await requireUser(mockEvent)
+
+      expect(result).toEqual(mockUser)
+      expect(mockPrisma.user.findUnique).toHaveBeenCalledWith({
+        where: { id: 'user123' }
+      })
+    })
+
+    it('should throw 401 when not authenticated', async () => {
+      await expect(requireUser(mockEvent)).rejects.toThrow('Authentication required')
+    })
+
+    it('should throw 401 when user not found in database', async () => {
+      const token = generateJWT({ userId: 'nonexistent', email: 'test@example.com' })
+      mockEvent.node.req.headers.cookie = `auth_token=${token}`
+
+      mockPrisma.user.findUnique.mockResolvedValue(null)
+
+      try {
+        await requireUser(mockEvent)
+        throw new Error('Should have thrown')
+      } catch (error: any) {
+        expect(error.statusCode).toBe(401)
+        expect(error.statusMessage).toBe('Unauthorized')
+        expect(error.message).toBe('User not found')
+      }
+    })
+
+    it('should include all user fields including stripeCustomerId', async () => {
+      const token = generateJWT({ userId: 'user123', email: 'test@example.com' })
+      mockEvent.node.req.headers.cookie = `auth_token=${token}`
+
+      const mockUser = {
+        id: 'user123',
+        email: 'test@example.com',
+        name: 'Test User',
+        stripeCustomerId: 'cus_test123',
+        customField: 'custom value',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      }
+
+      mockPrisma.user.findUnique.mockResolvedValue(mockUser)
+
+      const result = await requireUser(mockEvent)
+
+      expect(result.stripeCustomerId).toBe('cus_test123')
+      expect(result.customField).toBe('custom value')
     })
   })
 

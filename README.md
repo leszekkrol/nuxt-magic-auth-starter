@@ -14,12 +14,14 @@ Welcome to **Nuxt Magic Auth Starter**, a production-ready starter template for 
 - 🎯 **JWT Token Management** - Secure token-based authentication with automatic refresh
 - 📧 **Email Provider Agnostic** - Support for Console (dev), Resend, and SMTP/Nodemailer
 - 💳 **Stripe Integration** - Built-in payment processing with automatic customer creation
+- 👤 **Flexible User Updates** - Update any user field via REST API (PATCH endpoint)
+- 📊 **Complete User Data** - GET endpoint returns all fields including custom ones
 - 🎨 **Tailwind CSS** - Beautiful, responsive UI out of the box
 - 📦 **TypeScript** - Full type safety and IntelliSense
 - 🚀 **Production Ready** - Includes security best practices, rate limiting, and error handling
 - 🔧 **Zero Config** - Works out-of-the-box with sensible defaults
 - 📱 **Responsive Design** - Mobile-first, accessible components
-- 🧪 **Fully Tested** - 210 unit tests with Vitest
+- 🧪 **Fully Tested** - 224 unit tests with Vitest
 
 ## 🛠 Technology Stack
 
@@ -328,8 +330,10 @@ npm run dev
 | `<AuthLoadingSpinner>` | Loading indicator component |
 | `auth` middleware | Protect routes easily |
 | `guest` middleware | Redirect logged-in users |
-| Prisma schema | User & VerificationToken models |
+| Prisma schema | User & VerificationToken models with Stripe |
 | Email templates | Customizable magic link & welcome emails |
+| User updates | Flexible PATCH endpoint for profile changes |
+| Stripe payments | Complete payment & subscription system |
 
 ### Updating the Package
 
@@ -536,7 +540,8 @@ Token Created ──► Email Sent ──► User Clicks ──► Token Verifie
 |--------|----------|-------------|
 | `POST` | `/api/auth/send-magic-link` | Send magic link to email |
 | `POST` | `/api/auth/verify-token` | Verify token and authenticate |
-| `GET` | `/api/auth/me` | Get current authenticated user |
+| `GET` | `/api/auth/me` | Get current authenticated user (returns all user fields) |
+| `PATCH` | `/api/auth/me` | Update current authenticated user (any fields) |
 | `POST` | `/api/auth/logout` | Clear authentication cookie |
 
 ### Stripe Endpoints
@@ -579,6 +584,78 @@ const response = await $fetch('/api/auth/verify-token', {
   isNewUser: false
 }
 ```
+
+### Example: Get Current User
+
+```typescript
+// Request
+const response = await $fetch('/api/auth/me')
+
+// Response - Returns ALL user fields from database
+{
+  user: {
+    id: 'clx...',
+    email: 'user@example.com',
+    name: 'John Doe',
+    stripeCustomerId: 'cus_...', // Included if Stripe integration enabled
+    createdAt: '2024-01-01T00:00:00.000Z',
+    updatedAt: '2024-01-01T00:00:00.000Z'
+    // Plus any additional custom fields you've added to the User model
+  }
+}
+
+// Or if not authenticated
+{
+  user: null
+}
+```
+
+> **Note:** The `/api/auth/me` endpoint returns **all fields** from the User model in your database. This means if you add custom fields to your Prisma schema (e.g., `avatar`, `bio`, `role`, `preferences`), they will automatically be included in the response without any code changes.
+
+### Example: Update User
+
+```typescript
+// Request - Update single field
+const response = await $fetch('/api/auth/me', {
+  method: 'PATCH',
+  body: { name: 'John Doe' }
+})
+
+// Request - Update multiple fields
+const response = await $fetch('/api/auth/me', {
+  method: 'PATCH',
+  body: {
+    name: 'John Doe',
+    bio: 'Full-stack developer',
+    avatar: 'https://example.com/avatar.jpg',
+    preferences: { theme: 'dark', language: 'en' }
+  }
+})
+
+// Response
+{
+  success: true,
+  user: {
+    id: 'clx...',
+    email: 'user@example.com',
+    name: 'John Doe',
+    bio: 'Full-stack developer',
+    avatar: 'https://example.com/avatar.jpg',
+    preferences: { theme: 'dark', language: 'en' },
+    stripeCustomerId: 'cus_...',
+    createdAt: '2024-01-01T00:00:00.000Z',
+    updatedAt: '2024-01-01T12:30:00.000Z' // Updated automatically
+  }
+}
+```
+
+**Features:**
+- ✅ **Flexible** - Update any field from your User model
+- ✅ **Bulk updates** - Update multiple fields in one request
+- ✅ **Protected fields** - Automatically excludes `id` and `createdAt`
+- ✅ **Email validation** - Checks if new email is already in use
+- ✅ **Type-safe** - Prisma validates field types automatically
+- ✅ **Authenticated only** - Requires valid auth token
 
 ## 🧩 Components
 
@@ -750,7 +827,7 @@ interface User {
 
 ```vue
 <script setup>
-const { user, isLoggedIn, sendMagicLink, logout, loading } = useAuth()
+const { user, isLoggedIn, sendMagicLink, logout, loading, refreshUser } = useAuth()
 
 async function handleLogin() {
   try {
@@ -765,11 +842,31 @@ async function handleLogout() {
   await logout()
   navigateTo('/')
 }
+
+// Update user profile
+async function updateProfile(data: any) {
+  try {
+    await $fetch('/api/auth/me', {
+      method: 'PATCH',
+      body: data
+    })
+    // Refresh user data in composable
+    await refreshUser()
+  } catch (err) {
+    // Handle error
+  }
+}
 </script>
 
 <template>
   <div v-if="isLoggedIn">
     <p>Welcome, {{ user?.name }}!</p>
+    <p v-if="user?.bio">{{ user.bio }}</p>
+    
+    <button @click="updateProfile({ name: 'New Name', bio: 'Developer' })">
+      Update Profile
+    </button>
+    
     <button @click="handleLogout" :disabled="loading">
       Logout
     </button>
@@ -1357,7 +1454,7 @@ See [Stripe Testing Documentation](https://stripe.com/docs/testing) for more tes
 
 ## 🧪 Testing
 
-The project includes 210 unit tests covering all utilities, API logic, composables, components, and Stripe integration.
+The project includes 224 unit tests covering all utilities, API logic, composables, components, and Stripe integration.
 
 ```bash
 # Run tests
@@ -1425,10 +1522,15 @@ The author of the project is:
 - ✨ **NEW**: Billing portal endpoint for subscription management
 - ✨ **NEW**: Checkout session endpoint for purchases
 - ✨ **NEW**: Webhook handler for Stripe events
-- ✨ **NEW**: 32 additional unit tests for Stripe functionality
+- ✨ **NEW**: `PATCH /api/auth/me` endpoint for flexible user profile updates
+- ✨ **NEW**: `requireUser()` helper function in auth utilities
+- ✨ **NEW**: `GET /api/auth/me` now returns all user fields (including custom fields)
+- ✨ **NEW**: 46 additional unit tests (32 Stripe + 10 user updates + 4 auth)
 - 📚 Updated documentation with comprehensive Stripe setup guide
+- 📚 Added examples for user profile updates
 - 🔄 Added migration guide for existing projects
-- 🎯 Total: 210 unit tests (178 → 210)
+- 🔧 Improved test coverage to 98%+ for auth utilities
+- 🎯 Total: 224 unit tests (178 → 224)
 
 ### Version 1.1.0
 - Initial stable release

@@ -5,7 +5,14 @@ import { isValidId } from '../../utils/validation'
 
 /**
  * GET /api/auth/me
- * Returns current authenticated user data with automatic token refresh
+ * Returns current authenticated user data with all fields from database
+ * Includes automatic token refresh when expiring soon
+ * 
+ * Returns all user fields including:
+ * - id, email, name
+ * - stripeCustomerId (if Stripe integration enabled)
+ * - createdAt, updatedAt
+ * - any additional custom fields added to User model
  */
 export default defineEventHandler(async (event) => {
   const tokenPayload = getCurrentUser(event)
@@ -27,14 +34,10 @@ export default defineEventHandler(async (event) => {
     return { user: null }
   }
   
+  // Fetch user with all fields from database (including stripeCustomerId and any custom fields)
   const user = await prisma.user.findUnique({
-    where: { id: tokenPayload.userId },
-    select: {
-      id: true,
-      email: true,
-      name: true,
-      createdAt: true
-    }
+    where: { id: tokenPayload.userId }
+    // No select clause - returns all fields
   })
   
   if (!user) {
