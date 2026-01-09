@@ -14,6 +14,7 @@ Welcome to **Nuxt Magic Auth Starter**, a production-ready starter template for 
 - 🎯 **JWT Token Management** - Secure token-based authentication with automatic refresh
 - 📧 **Email Provider Agnostic** - Support for Console (dev), Resend, and SMTP/Nodemailer
 - 💳 **Stripe Integration** - Built-in payment processing with automatic customer creation
+- 🔒 **Subscription Paywall** - Ready-to-use component for premium content protection
 - 👤 **Flexible User Updates** - Update any user field via REST API (PATCH endpoint)
 - 📊 **Complete User Data** - GET endpoint returns all fields including custom ones
 - 🎨 **Tailwind CSS** - Beautiful, responsive UI out of the box
@@ -21,7 +22,7 @@ Welcome to **Nuxt Magic Auth Starter**, a production-ready starter template for 
 - 🚀 **Production Ready** - Includes security best practices, rate limiting, and error handling
 - 🔧 **Zero Config** - Works out-of-the-box with sensible defaults
 - 📱 **Responsive Design** - Mobile-first, accessible components
-- 🧪 **Fully Tested** - 224 unit tests with Vitest
+- 🧪 **Fully Tested** - 233 unit tests with Vitest
 
 ## 🛠 Technology Stack
 
@@ -328,12 +329,14 @@ npm run dev
 | `<AuthLoginButton>` | Styled login button with variants |
 | `<AuthProtectedContent>` | Show content only to logged-in users |
 | `<AuthLoadingSpinner>` | Loading indicator component |
+| `<StripeProtectedContent>` | Subscription paywall component |
 | `auth` middleware | Protect routes easily |
 | `guest` middleware | Redirect logged-in users |
 | Prisma schema | User & VerificationToken models with Stripe |
 | Email templates | Customizable magic link & welcome emails |
 | User updates | Flexible PATCH endpoint for profile changes |
 | Stripe payments | Complete payment & subscription system |
+| `useStripe()` composable | Subscription status management |
 
 ### Updating the Package
 
@@ -548,6 +551,7 @@ Token Created ──► Email Sent ──► User Clicks ──► Token Verifie
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
+| `GET` | `/api/stripe/subscription` | Get current user's subscription status |
 | `POST` | `/api/stripe/checkout` | Create checkout session for products/subscriptions |
 | `POST` | `/api/stripe/billing-portal` | Create billing portal session for subscription management |
 | `POST` | `/api/stripe/webhook` | Handle Stripe webhook events |
@@ -789,6 +793,186 @@ Loading indicator with size and color options.
 | `containerClass` | `string` | `''` | Additional CSS classes |
 
 **Sizes:** `sm`, `md`, `lg` | **Colors:** `primary`, `white`, `gray`
+
+### `<StripeProtectedContent />`
+
+Shows content only to users with active Stripe subscription. Perfect for premium content, paywalls, and subscription-gated features.
+
+```vue
+<template>
+  <!-- Basic usage - check for any active subscription -->
+  <StripeProtectedContent>
+    <h2>Premium Content</h2>
+    <p>This is only visible to subscribers!</p>
+  </StripeProtectedContent>
+
+  <!-- Check for specific price -->
+  <StripeProtectedContent priceId="price_premium">
+    <h2>Premium Plan Content</h2>
+    <p>Only for premium subscribers!</p>
+  </StripeProtectedContent>
+
+  <!-- Check for specific product -->
+  <StripeProtectedContent productId="prod_pro">
+    <h2>Pro Features</h2>
+    <p>Pro plan exclusive content</p>
+  </StripeProtectedContent>
+
+  <!-- Custom paywall -->
+  <StripeProtectedContent priceId="price_premium">
+    <template #default>
+      <p>Premium content here</p>
+    </template>
+    
+    <template #paywall>
+      <div class="custom-paywall">
+        <h3>Upgrade to Premium</h3>
+        <p>Get access to exclusive features</p>
+        <button @click="navigateTo('/pricing')">
+          View Plans
+        </button>
+      </div>
+    </template>
+  </StripeProtectedContent>
+
+  <!-- Custom loading state -->
+  <StripeProtectedContent>
+    <template #loading>
+      <div>Checking subscription...</div>
+    </template>
+    <p>Premium content</p>
+  </StripeProtectedContent>
+</template>
+```
+
+**Props:**
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `priceId` | `string` | - | Stripe price ID to check for (optional) |
+| `productId` | `string` | - | Stripe product ID to check for (optional) |
+| `checkoutUrl` | `string` | - | Custom URL for upgrade button |
+| `autoCheck` | `boolean` | `true` | Auto-check subscription on mount |
+
+**Slots:**
+
+| Slot | Description |
+|------|-------------|
+| `default` | Content shown to subscribers |
+| `paywall` | Custom paywall UI (has default) |
+| `loading` | Custom loading state (has default) |
+| `error` | Custom error message |
+
+**Exposed Methods:**
+
+```typescript
+const component = ref<InstanceType<typeof StripeProtectedContent>>()
+
+// Manually refresh subscription status
+component.value?.checkAccess()
+```
+
+**Example - Real-world usage:**
+
+```vue
+<script setup>
+const showPremium = ref(false)
+</script>
+
+<template>
+  <div>
+    <h1>My Dashboard</h1>
+    
+    <!-- Free content for everyone -->
+    <section>
+      <h2>Basic Features</h2>
+      <p>Available to all users</p>
+    </section>
+    
+    <!-- Premium content with paywall -->
+    <StripeProtectedContent 
+      priceId="price_premium"
+      checkoutUrl="/pricing?plan=premium"
+    >
+      <section>
+        <h2>🌟 Premium Analytics</h2>
+        <AdvancedCharts />
+        <DetailedReports />
+      </section>
+      
+      <template #paywall>
+        <div class="paywall-card">
+          <div class="icon">🔒</div>
+          <h3>Premium Feature</h3>
+          <p>Unlock advanced analytics with Premium plan</p>
+          <ul>
+            <li>✓ Real-time data</li>
+            <li>✓ Custom reports</li>
+            <li>✓ Export to CSV</li>
+          </ul>
+          <button class="upgrade-btn">
+            Upgrade to Premium - $29/mo
+          </button>
+        </div>
+      </template>
+    </StripeProtectedContent>
+  </div>
+</template>
+```
+
+## 📝 Composables
+
+### `useStripe()`
+
+Composable for Stripe subscription management with reactive state.
+
+```typescript
+const {
+  // State
+  subscription,     // Ref<StripeSubscription | null> - Current subscription
+  loading,          // Ref<boolean> - Loading state
+  error,            // Ref<string | null> - Error message
+  hasSubscription,  // ComputedRef<boolean> - Has any subscription
+  isActive,         // ComputedRef<boolean> - Has active/trialing subscription
+  
+  // Actions
+  fetchSubscription,  // (options?: { priceId?: string, productId?: string }) => Promise<SubscriptionStatus>
+  hasPrice,          // (priceId: string) => Promise<boolean>
+  hasProduct,        // (productId: string) => Promise<boolean>
+  clearSubscription  // () => void
+} = useStripe()
+```
+
+**Example Usage:**
+
+```vue
+<script setup>
+const { subscription, hasSubscription, hasPrice, isActive } = useStripe()
+
+// Check if user has specific subscription
+onMounted(async () => {
+  const hasPremium = await hasPrice('price_premium')
+  console.log('Has premium:', hasPremium)
+})
+
+// Check subscription details
+watchEffect(() => {
+  if (subscription.value) {
+    console.log('Subscription status:', subscription.value.status)
+    console.log('Renews:', new Date(subscription.value.currentPeriodEnd * 1000))
+  }
+})
+</script>
+
+<template>
+  <div v-if="hasSubscription">
+    <p>Status: {{ subscription?.status }}</p>
+    <p v-if="subscription?.cancelAtPeriodEnd">
+      ⚠️ Subscription will cancel at period end
+    </p>
+  </div>
+</template>
+```
 
 ## 📝 Composables
 
@@ -1454,7 +1638,7 @@ See [Stripe Testing Documentation](https://stripe.com/docs/testing) for more tes
 
 ## 🧪 Testing
 
-The project includes 224 unit tests covering all utilities, API logic, composables, components, and Stripe integration.
+The project includes 233 unit tests covering all utilities, API logic, composables, components, and Stripe integration.
 
 ```bash
 # Run tests
@@ -1519,18 +1703,21 @@ The author of the project is:
 ### Version 1.2.0 (Latest)
 - ✨ **NEW**: Full Stripe integration for payment processing
 - ✨ **NEW**: Automatic Stripe customer creation on user registration
+- ✨ **NEW**: `<StripeProtectedContent>` component for subscription paywalls
+- ✨ **NEW**: `useStripe()` composable for subscription management
+- ✨ **NEW**: `GET /api/stripe/subscription` endpoint for checking subscription status
 - ✨ **NEW**: Billing portal endpoint for subscription management
 - ✨ **NEW**: Checkout session endpoint for purchases
 - ✨ **NEW**: Webhook handler for Stripe events
 - ✨ **NEW**: `PATCH /api/auth/me` endpoint for flexible user profile updates
 - ✨ **NEW**: `requireUser()` helper function in auth utilities
 - ✨ **NEW**: `GET /api/auth/me` now returns all user fields (including custom fields)
-- ✨ **NEW**: 46 additional unit tests (32 Stripe + 10 user updates + 4 auth)
+- ✨ **NEW**: 55 additional unit tests (32 Stripe + 9 subscription + 10 user updates + 4 auth)
 - 📚 Updated documentation with comprehensive Stripe setup guide
-- 📚 Added examples for user profile updates
+- 📚 Added examples for user profile updates and subscription paywalls
 - 🔄 Added migration guide for existing projects
 - 🔧 Improved test coverage to 98%+ for auth utilities
-- 🎯 Total: 224 unit tests (178 → 224)
+- 🎯 Total: 233 unit tests (178 → 233)
 
 ### Version 1.1.0
 - Initial stable release
